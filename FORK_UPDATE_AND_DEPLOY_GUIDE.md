@@ -21,11 +21,14 @@
 ```bash
 cd /Users/holidz/opensource/dsh/deepseek-harness
 node --version
+corepack enable pnpm
 corepack pnpm --version
 corepack pnpm install
 corepack pnpm run typecheck
 corepack pnpm run build
 ```
+
+`corepack enable pnpm` 是一次性环境设置：它把项目脚本的嵌套 `pnpm` 调用也需要的 shim 放进 PATH。只运行 `corepack pnpm ...` 而没有启用 shim 时，顶层命令可以启动，但 `build:web` 等子脚本可能以 `pnpm: command not found` 失败。
 
 安装会配置仓库的 Lefthook Git hooks 和双语文档合并驱动。安装或移动检出目录后，如果 hooks 缺失，重新运行：
 
