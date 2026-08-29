@@ -1,6 +1,8 @@
 # AGENTS.md
 
-DeepSeek Harness is a plugin-based agent harness on vendored Cordis: **everything is a plugin**. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+DeepSeek Harness is an agent harness on vendored Cordis: **everything is a plugin**. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+
+For DSH update, sync, or redeployment requests, follow the [personal fork update and redeployment manual](FORK_UPDATE_AND_DEPLOY_GUIDE.md).
 
 ## Pre-release stance: foundation over blast radius
 
