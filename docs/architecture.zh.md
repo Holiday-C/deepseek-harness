@@ -42,6 +42,8 @@ dsh --profile web --dump-config
 
 所有受支持的 Node 应用都从 `dsh` CLI 与具名 profile 启动。随附应用是 `dsh web`（刻意为 `--profile web` 保留的别名）、`dsh --profile headless`、`dsh --profile sdk`、`dsh --profile sdk-minimal` 与 `dsh --profile acp`。TypeScript SDK 会解析其同版本 `dsh` 依赖并选择 `sdk`；自定义插件组合继续由 profile 与有序 patch 文件表达，而不是另一个可执行文件或内联应用树。`sdk-minimal` 是位于同一 launcher 后的仓库自有独立组合包，而不是由调用方提供的 Cordis 配置树。
 
+长生命周期 Web 表面会在受 supervisor 管理的 worker 中运行其 profile。父进程只保留进程替换与信号转发；所有应用能力仍位于 worker 的 Cordis 树中。根 agent 插件可以通过 launcher 提供的 `appRestart` 预约一次重启、结束自己的回合、等待应用静止并提交私有 worker 退出状态。父进程随后从当前产物以相同入口和参数启动。其他 profile 继续直接运行，因为它们的 stdio client 与一次性生命周期不具备 Web client 的重连语义。
+
 Vendored CLI、仅用于构建和测试的可执行文件、进程内直接挂载插件以及私有浏览器 WebWorker 预览都不属于 Harness 应用启动器。[`verify-application-entrypoints`](../scripts/verify-application-entrypoints.ts)将每个包 bin、可执行源码与根 demo 归入显式类别，并拒绝任何绕过 `dsh` 的 Node 应用路径。
 
 Python SDK 遵循相同的应用架构。其运行时 wheel 把普通 `dsh` CLI 打包为 `deepseek-harness-sdk-runtime-<platform>-<arch>`，客户端默认以显式 Harness home 启动 `dsh --profile sdk`。极简示例选择随附的 `sdk-minimal` profile。Python 暴露 profile 选择与有序 patch 文件，而不是完整 Cordis 树；持久外部插件通过 `dsh plugin` 安装。已删除的私有直读配置载体没有兼容 bin 或回退 parser。

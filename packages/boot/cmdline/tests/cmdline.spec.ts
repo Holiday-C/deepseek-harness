@@ -223,6 +223,41 @@ describe('provideCmdline', () => {
     expect(ctx.cmdlineArgs?.get()).toEqual(['--resume', 'abc'])
   })
 
+  it('provides no restart request to a directly launched application', () => {
+    const ctx = new Context()
+    provideCmdline(ctx, { args: [], exit: () => {} })
+    expect(ctx.get('appRestart')).toBeUndefined()
+  })
+
+  it('reserves one restart until the caller cancels or commits it', () => {
+    const ctx = new Context()
+    const restart = vi.fn()
+    provideCmdline(ctx, { args: [], exit: () => {}, restart })
+    const service = ctx.get('appRestart')
+    expect(service).toBeDefined()
+
+    const first = service?.prepare()
+    expect(() => service?.prepare()).toThrow('application restart is already reserved')
+    first?.cancel()
+    first?.cancel()
+    const second = service?.prepare()
+    second?.commit()
+    second?.commit()
+
+    expect(restart).toHaveBeenCalledOnce()
+    expect(() => service?.prepare()).toThrow('application restart is already reserved')
+  })
+
+  it('releases a restart reservation when commit fails synchronously', () => {
+    const ctx = new Context()
+    const restart = vi.fn(() => { throw new Error('restart failed') })
+    provideCmdline(ctx, { args: [], exit: () => {}, restart })
+    const service = ctx.get('appRestart')
+
+    expect(() => service?.prepare().commit()).toThrow('restart failed')
+    expect(() => service?.prepare()).not.toThrow()
+  })
+
   it('refuses at load a program in which no command declares an action', async () => {
     const { ctx } = await bootFixture([], resolveDemo, { withoutProvider: true })
     expect(() => { parseCmdline(ctx, demoCommand()) })

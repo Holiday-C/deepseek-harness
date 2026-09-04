@@ -9,7 +9,7 @@ kind: "package-library"
 
 ## 概述
 
-`dsh-cmdline` 让你的应用持有自己的命令行：启动器只保留属于自己的 flag（`--profile`、`--patch`、配置 dump），并把**其后的一切**原样交给你的应用，因此 flag、`--help` 文本与解析错误都由你的应用决定。你从这些参数解析出的值会胜过配置中写下的任何默认值，且无需写回任何内容。你的应用还获得一个有边界的进程退出请求，接到启动器的关停上。当你编写接受自有 flag 的应用 bin 时使用它；它本身不增加任何提示词、schema 或面向模型的表面。
+`dsh-cmdline` 让你的应用持有自己的命令行：启动器只保留属于自己的 flag（`--profile`、`--patch`、配置 dump），并把**其后的一切**原样交给你的应用，因此 flag、`--help` 文本与解析错误都由你的应用决定。你从这些参数解析出的值会胜过配置中写下的任何默认值，且无需写回任何内容。你的应用还会获得有边界的退出与就绪值；当 launcher 能替换进程时，还会获得可选的排他重启预约。当你编写接受自有 flag 的应用 bin 时使用它；它本身不增加任何提示词、schema 或面向模型的表面。
 
 ## 目录
 
@@ -29,11 +29,12 @@ kind: "package-library"
 
 ### 启动器提供的值
 
-启动器向你的应用提供三样东西：
+启动器向你的应用提供以下值：
 
 - `ctx.cmdlineArgs`——本次调用的内层参数。读取它返回一份不可变快照，且绝不会消费或修改它们：`dsh --profile tui --resume abc` 给你的应用 `['--resume', 'abc']`。
 - `ctx.appExit`——在整棵树关闭后请求进程退出的方式，接到启动器的关停控制器上。
 - `ctx.appReady`——成功启动信号，只在 Loader 树与 launcher 自有设置成功后提交。
+- `ctx.appRestart`——可选的排他重启预约。当另一个请求仍持有预约时，`prepare()` 会失败；返回的请求可以提交或取消一次，重复结算不起作用。
 
 没有参数的启动会看到空列表——这是诚实的答案，而不是缺失的值。
 
@@ -83,20 +84,20 @@ kind: "package-library"
 
 ### 设计说明
 
-- **启动器事实，而非配置。** `cmdlineArgs` 与 `appExit` 在树挂载前提供到宿主上下文上；它们不是 Loader 行，因此没有任何组合持有或覆盖它们。
+- **启动器事实，而非配置。** `cmdlineArgs`、`appExit`、`appReady` 与可选的 `appRestart` 在树挂载前提供到宿主上下文上；它们不是 Loader 行，因此没有任何组合持有或覆盖它们。
 - **按位置切分。** 启动器不认识任何应用行：自身 flag 之后的第一个 token 就是应用参数的起点，因此 flag 家族、`--help` 文本与解析错误都由应用自己持有。
 - **结构化错误识别。** `isCommanderError` 读取 commander 的错误码前缀，而不是用 `instanceof`，因为树外插件会带来自己的一份 commander 副本，其 `CommanderError` 身份不同；`configureExitAndOutput` 会遍历每个子命令，因为 commander 只在注册时复制退出与输出设置。
 - **可注入的输出流。** `internals` 持有输出流，使测试无需触碰进程即可捕获 commander 的文本。
 
 ### 解析约定
 
-解析路径是一个只有两个所有者的小家族：`provideCmdline` 冻结宿主参数，并在任何配置树条目挂载前提供 `cmdlineArgs` 与 `appExit`；`parseCmdline` 针对不可变参数运行你的 commander program，把每个命令的 help、version 与错误输出都接到启动器上。被拒绝的值、`--help` 或 `--version` 会打印 commander 文本并请求 `ctx.appExit`，且不发布任何内容，因此依赖行绝不会激活；Loader 会把每行的 `!!js` 插值推迟到该行声明的注入全部激活之后。各导出的约定在代码中，不在本 README——见 [`src/index.ts`](src/index.ts)。
+解析路径是一个只有两个所有者的小家族：`provideCmdline` 冻结宿主参数，并在任何配置树条目挂载前提供 launcher 的生命周期值；`parseCmdline` 针对不可变参数运行你的 commander program，把每个命令的 help、version 与错误输出都接到启动器上。被拒绝的值、`--help` 或 `--version` 会打印 commander 文本并请求 `ctx.appExit`，且不发布任何内容，因此依赖行绝不会激活；Loader 会把每行的 `!!js` 插值推迟到该行声明的注入全部激活之后。各导出的约定在代码中，不在本 README——见 [`src/index.ts`](src/index.ts)。
 
 ### 源码地图
 
 | 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | `CmdlineArgs`/`AppExit` 类型、`provideCmdline`、`parseCmdline`、commander 退出／输出路由 |
+| [`src/index.ts`](src/index.ts) | launcher 值类型、重启预约、`provideCmdline`、`parseCmdline`、commander 退出／输出路由 |
 | [`src/invariant.ts`](src/invariant.ts) | 不变式伴生插件（无运行时不变式；Loader 结算会报告缺失的服务） |
 
 </details>

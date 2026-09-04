@@ -16,6 +16,8 @@ The Python SDK distributes a native executable through four platform wheels. Its
 
 Every supported Node application starts through the `dsh` CLI and one named profile. The shipped application commands are `dsh web`, `dsh --profile headless`, `dsh --profile sdk`, `dsh --profile sdk-minimal`, and `dsh --profile acp`; `dsh web` is the deliberate convenience alias for `--profile web`, not another application entry.
 
+The CLI keeps a thin supervisor around the Web profile worker so a verified update can replace that worker through the [supervised self-update restart](../feature/2026-09-05-supervised-web-self-update-restart.md). This remains one `dsh` application entry and one named profile; the parent owns only worker replacement and signal forwarding, while the Cordis application remains inside the worker. Headless, SDK, SDK-minimal, and ACP profiles run directly.
+
 Vendor CLIs, build-only and test-only executables, direct in-process plugin mounting, and the private browser WebWorker preview are outside the application-launch inventory. A package app bin or root demo that launches a package entry is not an accepted extension point.
 
 ### Profile applications

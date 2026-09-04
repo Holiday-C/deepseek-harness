@@ -18,6 +18,8 @@
 
 运行命令时所在的目录将作为默认 workspace 根目录。`web`、`headless`、`sdk`、`sdk-minimal` 和 `acp` profile 在首次使用时会从随附模板自动初始化；其他任何 profile 都必须通过 `dsh plugin` 创建。
 
+`dsh web` 会在 profile worker 之上保留一个极薄的 supervisor 进程。成功调用 `restart_dsh` 会让该 worker 以私有重启状态关闭，已经加载的 supervisor 随即用相同入口路径和参数重新启动，因此刚完成构建的 checkout 可以替换正在服务页面的代码。其他 profile 模式直接运行。普通退出码与信号绝不会被解释成重启请求；`Ctrl+C` 与 `SIGTERM` 会转发给 worker 并停止 supervisor。
+
 ## 应用参数
 
 启动器只解析自身的 flag，并将其后的所有内容交给已启动的 profile；注入该 profile 的任意应用插件都可以解析这份共享的不可变快照（[`dsh-cmdline`](../../packages/boot/cmdline/README.zh.md)）。启动器无法识别的第一个 token 标志着应用参数的开始：
@@ -52,4 +54,4 @@ profile 目录包含一个 `package.json`，其中记录树外插件依赖，以
 
 ## 开发
 
-生产运行需要已构建的包与前端产物。请在仓库根目录单独运行 `pnpm run build`，然后使用 `pnpm dsh <args...>` 运行 TypeScript 入口并转发所有参数；模块解析约定以[源码执行参考](reference/README.zh.md#source-execution)为准。
+生产运行需要已构建的包与前端产物。请在仓库根目录单独运行 `pnpm run build`，然后使用 `pnpm dsh <args...>` 运行 TypeScript 入口并转发所有参数；正在运行的 Web agent 只有在构建成功后才能调用 `restart_dsh`。模块解析约定以[源码执行参考](reference/README.zh.md#source-execution)为准。

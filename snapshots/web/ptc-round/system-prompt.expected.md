@@ -189,6 +189,8 @@ interface ToolArgsMap {
     /** Path to the image file, resolved by the filesystem backend. */
     file_path: string;
   } & Record<string, JsonValue>;
+  /** Restart the supervised DSH Web application after an update or rebuild has completed successfully. Use this only after required checks pass. The current Web connection disconnects briefly and reconnects to the new process. */
+  restart_dsh: Record<string, JsonValue>;
   /** Send a message to a background subagent by its subagent id, continuing the same conversation. It becomes the subagent's next turn: if it is still working, the message waits until its current turn finishes, so it cannot redirect work already underway. This call returns no answer from the subagent — only confirmation that the message was delivered — so use it to give it more work. A failure means the message was NOT delivered. */
   send_message: {
     /** The subagent id returned when the background subagent was started. */
@@ -460,6 +462,9 @@ interface ToolOutputMap {
         height: number;
       };
     };
+  };
+  restart_dsh: {
+    status: "restart-pending";
   };
   send_message: {
     messageId: string;

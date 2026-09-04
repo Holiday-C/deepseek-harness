@@ -182,6 +182,8 @@ export interface RunProfileOptions {
   patchFiles: readonly string[]
   /** The invocation's inner arguments, handed to the tree through `ctx.cmdlineArgs`. */
   args: readonly string[]
+  /** Exit code reserved for a supervisor-owned application restart. */
+  restartExitCode?: number
 }
 
 /**
@@ -203,11 +205,12 @@ function suppressShutdownError(ctx: Context, signal: AbortSignal, error: unknown
 /**
  * Boot one profile invocation end to end and leave process lifetime to the
  * mounted plugins (or to a one-shot runner the composition mounts).
- * @param options - environment snapshot, profile name, overlays, and the booted app's own arguments.
+ * @param options - environment snapshot, profile name, overlays, app arguments, and optional supervised-restart exit code.
  * @returns the settled root context and the shutdown controller.
  */
 export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Context; shutdown: ProcessShutdown }> {
   const composed = await composeProfile(options.profile, options.patchFiles)
+  const restartExitCode = options.restartExitCode
   const app: { current?: Context } = {}
   const appReady = createAppReady()
   const shutdown = createProcessShutdown(async () => { await app.current?.fiber.dispose() })
@@ -259,6 +262,9 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       args: options.args,
       exit: code => void shutdown.shutdown(code),
       ready: appReady.service,
+      ...restartExitCode === undefined
+        ? {}
+        : { restart: () => { void shutdown.shutdown(restartExitCode) } },
     })
   })
   app.current = ctx

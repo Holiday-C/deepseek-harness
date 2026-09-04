@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The boot group provides what every dsh app bin needs to start: `app-boot` turns a `cordis.yml` plus your environment and patch layers into a running app with clear failure messages, and `cmdline` lets the app own its command-line flags and `--help`. With these packages you can run `dsh` or write a new application or test fixture that boots the same way. Both are libraries imported by `apps/cli` and test-only Loader fixtures, never plugins a composition loads. This page maps the group; each package README owns its per-package contract.
+The boot group provides what a dsh app needs to start and replace itself: `app-boot` turns a `cordis.yml` plus environment and patch layers into a running app, `cmdline` hands launcher-owned arguments and lifecycle values to that app, and `app-restart` exposes a supervised restart to root Web agents. With these packages you can run `dsh` or write an application that boots the same way. This page maps the group; each package README owns its per-package contract.
 
 ## Table of Contents
 
@@ -23,7 +23,8 @@ The boot group provides what every dsh app bin needs to start: `app-boot` turns 
 | Package | Role | ctx key |
 |---|---|---|
 | [`app-boot`](app-boot/README.md) | Boots a dsh app from a `cordis.yml`: loads `.env`, applies profile and patch layers, and reports startup failures clearly | (library for the bins) |
-| [`cmdline`](cmdline/README.md) | Lets the app own its flags, `--help`, and exit code; passes everything after the launcher's flags through verbatim | `cmdlineArgs`, `appExit` |
+| [`app-restart`](app-restart/README.md) | Gives root Web agents an approved, quiescence-checked restart handoff after updates or rebuilds | (model-facing Consumer of `appRestart`) |
+| [`cmdline`](cmdline/README.md) | Lets the app own its flags and lifecycle requests; passes everything after the launcher's flags through verbatim | `cmdlineArgs`, `appExit`, `appReady`, `appRestart?` |
 
 <a id="related-documentation"></a>
 ## Related documentation

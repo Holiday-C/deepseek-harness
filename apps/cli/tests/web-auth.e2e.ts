@@ -7,7 +7,7 @@ import { request as httpRequest } from 'node:http'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -65,11 +65,12 @@ function cleanEnvironment(root: string, dshHome: string): NodeJS.ProcessEnv {
 }
 
 /** Start the public source CLI and wait for its authenticated readiness URL. */
-async function startWeb(root: string, dshHome: string, port: number): Promise<RunningWeb> {
+async function startWeb(root: string, dshHome: string, port: number, patch?: string): Promise<RunningWeb> {
   const child = spawn(process.execPath, [
     '--import', TSX_LOADER,
     DSH_SOURCE_BIN,
     'web',
+    ...patch === undefined ? [] : ['--patch', patch],
     '--no-open',
     '--port', String(port),
   ], {
@@ -107,6 +108,36 @@ async function startWeb(root: string, dshHome: string, port: number): Promise<Ru
     })
   })
   return { child, launchUrl, output: () => output }
+}
+
+/** Wait until one supervised CLI has printed `count` worker launch URLs. */
+function waitForLaunchUrls(running: RunningWeb, count: number): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const urls = (): string[] => [...running.output().matchAll(/dsh web: (http:\/\/[^\s]+)/gu)]
+      .map(match => match[1])
+      .filter((value): value is string => value !== undefined)
+    const settle = (): void => {
+      const found = urls()
+      if (found.length < count) return
+      cleanup()
+      resolve(found)
+    }
+    const fail = (): void => {
+      cleanup()
+      reject(new Error(`dsh web did not print ${String(count)} launch URLs:\n${redact(running.output())}`))
+    }
+    const cleanup = (): void => {
+      clearTimeout(timer)
+      running.child.stdout?.off('data', settle)
+      running.child.stderr?.off('data', settle)
+      running.child.off('exit', fail)
+    }
+    const timer = setTimeout(fail, 90_000)
+    running.child.stdout?.on('data', settle)
+    running.child.stderr?.on('data', settle)
+    running.child.once('exit', fail)
+    settle()
+  })
 }
 
 async function stopWeb(running: RunningWeb): Promise<void> {
@@ -152,6 +183,46 @@ function describeSettings(port: number, host: string, cookie?: string): Promise<
 }
 
 describe('dsh web authentication through the real CLI', () => {
+  it('keeps the supervisor alive while a worker requests replacement', { timeout: 180_000 }, async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-web-restart-real-cli-'))
+    const dshHome = join(root, '.dsh')
+    const port = await freePort()
+    const marker = join(root, 'worker-restarted')
+    const plugin = join(root, 'restart-probe.mjs')
+    const patch = join(root, 'restart.patch.yml')
+    let running: RunningWeb | undefined
+    try {
+      await writeFile(plugin, `
+import { existsSync, writeFileSync } from 'node:fs'
+export const name = 'restart-probe'
+export const inject = ['appReady', 'appRestart']
+export function apply(ctx) {
+  ctx.appReady.onReady(() => {
+    if (existsSync(${JSON.stringify(marker)})) return
+    writeFileSync(${JSON.stringify(marker)}, 'first worker requested restart\\n')
+    ctx.appRestart.prepare().commit()
+  })
+}
+`)
+      await writeFile(patch, `- insert:\n    - id: restart-probe\n      name: ${JSON.stringify(pathToFileURL(plugin).href)}\n`)
+      running = await startWeb(root, dshHome, port, patch)
+      const supervisorPid = running.child.pid
+      const urls = await waitForLaunchUrls(running, 2)
+
+      expect(running.child.pid).toBe(supervisorPid)
+      expect(new URL(urls[0]!).origin).toBe(`http://127.0.0.1:${String(port)}`)
+      expect(new URL(urls[1]!).origin).toBe(`http://127.0.0.1:${String(port)}`)
+      expect(new URL(urls[1]!).searchParams.get('token'))
+        .not.toBe(new URL(urls[0]!).searchParams.get('token'))
+      expect((await fetch(urls[1]!, { redirect: 'manual' })).status).toBe(303)
+    } catch (error) {
+      throw new Error(`${error instanceof Error ? error.message : String(error)}\n${redact(running?.output() ?? '')}`, { cause: error })
+    } finally {
+      if (running !== undefined) await stopWeb(running)
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('rejects a forged loopback Host and preserves the browser cookie across restart', { timeout: 180_000 }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-web-auth-real-cli-'))
     const dshHome = join(root, '.dsh')
