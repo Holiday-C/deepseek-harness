@@ -341,6 +341,7 @@ describe('Personal fork CI workflow', () => {
 
     expect(pullRequest.branches).toEqual(['custom/main'])
     expect(push.branches).toEqual(['custom/main'])
+    expect(workflow.env).toMatchObject({ TZ: 'Asia/Shanghai' })
 
     const source = JSON.stringify(workflow)
     for (const forbidden of [

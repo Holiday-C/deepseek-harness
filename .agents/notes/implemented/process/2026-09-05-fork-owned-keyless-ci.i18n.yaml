@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-05-fork-owned-keyless-ci.md
-2026-09-05-fork-owned-keyless-ci.md: c4db6f6af00e6557676f10f357910922ae2394ea
-2026-09-05-fork-owned-keyless-ci.zh.md: 0c5a19cb43926927c75bed85b4746bac5b508af4
+2026-09-05-fork-owned-keyless-ci.md: 2782900f2b85a722985e29f161dc505624c989df
+2026-09-05-fork-owned-keyless-ci.zh.md: 61d649b8a141c1d479d6ff37b78ba8d519b3f508
