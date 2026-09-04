@@ -1,12 +1,13 @@
 name: Build PR preview
 
-# Every push to a pull request publishes that pull request's preview to
-# Cloudflare Pages under its own branch alias, behind Cloudflare Access. The
-# upload carries build products only: the workflow never grants the deployment
-# platform access to this repository's sources.
+# In a non-fork repository, every push to a pull request publishes that pull
+# request's preview to Cloudflare Pages under its own branch alias, behind
+# Cloudflare Access. The upload carries build products only: the workflow never
+# grants the deployment platform access to this repository's sources.
 
 on:
   pull_request:
+    branches-ignore: [custom/main]
     types: [opened, synchronize, reopened]
 
 # Within one pull request the newest build wins. Across pull requests there is
@@ -32,6 +33,7 @@ env:
 
 jobs:
   preview:
+    if: github.event.repository.fork == false
     runs-on: dsh-ubuntu-24-04-16core
     name: cloudflare pages preview
     steps:

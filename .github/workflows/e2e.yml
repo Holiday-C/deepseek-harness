@@ -24,6 +24,8 @@ name: E2E (real DeepSeek API)
 # fork code — a textbook key-leak vector, especially once this repo is public.
 # The fork/secret model and its public-repo implications are recorded in
 # .agents/notes/implemented/testing/2026-06-19-real-api-e2e-ci.md.
+# A repository that is itself a fork skips this credentialed job for every
+# event; its personal integration CI remains keyless.
 #
 # Note: scheduled triggers are auto-disabled after 60 days of repo inactivity;
 # push/pull_request/workflow_dispatch act as backstops.
@@ -32,6 +34,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
+    branches-ignore: [custom/main]
   schedule:
     # 00:17 UTC nightly = 08:17 Asia/Shanghai — off the top-of-hour cron stampede.
     - cron: '17 0 * * *'
@@ -55,11 +58,12 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     name: e2e
-    # Run on every trusted event. Skip untrusted PRs (forks + Dependabot) where
-    # the secret is withheld — they would otherwise hard-fail the preflight.
+    # Run on every trusted source-repository event. Skip repository forks and
+    # untrusted PRs, where the secret is withheld.
     if: >-
-      github.event_name != 'pull_request'
-      || !(github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == 'dependabot[bot]')
+      github.event.repository.fork == false
+      && (github.event_name != 'pull_request'
+      || !(github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == 'dependabot[bot]'))
     # Profile e2e files can each own several complete dsh subprocess trees, so
     # four file workers preserve process/PTY headroom. Tests retain 120s/test
     # and retry 2; 45m still bounds retry storms against a slow API.

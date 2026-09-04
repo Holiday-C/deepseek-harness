@@ -231,6 +231,12 @@ git rev-parse origin/当前分支名
 
 在个人 Fork 中把功能分支的 Pull Request 目标设为 `custom/main`，不要误选 DeepSeek 官方 `master`。评审时优先检查行为、失败、时序、所有权、安全、持久化和测试证据，再检查实现风格。
 
+### 个人 Fork 的自动检查
+
+[`Fork CI`](.github/workflows/fork-ci.yml) 对目标为 `custom/main` 的 Pull Request 和 `custom/main` 推送运行。它只检出当前 Fork 的提交并使用 GitHub 标准托管运行器；不会读取仓库 Secrets、Variables 或 Environments，也不会恢复 Actions 缓存、下载其他 workflow 的 artifact，或请求上游仓库的自托管和企业级运行器。
+
+目标为 `custom/main` 的 Pull Request 不会触发官方仓库专用的主 CI、Cloudflare 预览、Issue App 和自动真实 API 流程；其他 Fork 事件也会在分配运行器前跳过官方仓库 job。`fork checks passed` 汇总静态检查、覆盖率、快照与构建产物、Node 兼容性、Python SDK、Wine 阻断检查和原生 Windows 阻断检查；需要外部服务或凭据的验证仍由开发者显式执行。
+
 需要改写已推送历史时，先获取远程精确提交，再使用带精确 lease 的 `--force-with-lease`；永远不用裸 `--force`。不熟悉历史改写时，使用普通修复提交最安全。
 
 合并后切回个人集成分支：
