@@ -324,6 +324,22 @@ export interface Config {
 
 来源：[`packages/api/settings-controller/src/index.ts:41`](../packages/api/settings-controller/src/index.ts)
 
+<a id="deepseek-aidsh-app-restart"></a>
+
+## `@deepseek-ai/dsh-app-restart`
+
+需要：`agents` · `appRestart` · `jobs` · `tools`
+
+```ts config-catalog
+/** User-confirmation policy for the restart tool. */
+export interface Config {
+  /** Ask for one user approval before scheduling a restart. */
+  requireApproval?: boolean
+}
+```
+
+来源：[`packages/boot/app-restart/src/index.ts:17`](../packages/boot/app-restart/src/index.ts)
+
 <a id="deepseek-aidsh-attachment-local"></a>
 
 ## `@deepseek-ai/dsh-attachment-local`

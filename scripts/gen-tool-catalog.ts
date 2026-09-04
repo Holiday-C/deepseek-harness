@@ -9,12 +9,14 @@
 import { globSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import * as AppRestart from '@deepseek-ai/dsh-app-restart'
+import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
 import LlmRuntime from '@deepseek-ai/dsh-llm'
 import type { ToolSchema } from '@deepseek-ai/dsh-llm'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createScope } from '@deepseek-ai/dsh-scope'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SqliteSessionQueryEngine from '@deepseek-ai/dsh-session-query-sqlite'
 import GoalService from '@deepseek-ai/dsh-goal'
@@ -188,6 +190,30 @@ export interface ToolPackage {
  * guard proves it is exhaustive against the on-disk glob.
  */
 const TOOL_PACKAGES: ToolPackage[] = [
+  {
+    pkg: '@deepseek-ai/dsh-app-restart',
+    dir: 'app-restart',
+    source: 'packages/boot/app-restart/src/index.ts',
+    requires: ['ctx.appRestart', 'ctx.agents', 'ctx.jobs', 'ctx.tools', 'a live root Web Agent'],
+    writes: ['tool/call', 'tool/result', 'a supervised process restart after Agent quiescence'],
+    async mount(ctx) {
+      await ctx.plugin(AgentRegistry)
+      await ctx.plugin(LocalJobRegistry)
+      provideCmdline(ctx, { args: [], exit: () => {}, restart: () => {} })
+      let agent!: Agent
+      await ctx.plugin(Object.assign((inner: Context) => {
+        const session = Session.create(SessionId('tool-catalog-app-restart'))
+        agent = { id: session.id, session, status: 'idle' } as Agent
+        Object.assign(agent, { ctx: createScope(inner, agent).ctx.extend({ agent }) })
+        inner.agents.register(agent)
+      }, { inject: ['agents', 'tools'] }))
+      await ctx.plugin(AppRestart, {})
+      catalogChildScopes.set(ctx, agent)
+    },
+    scope: ctx => catalogChildScopes.get(ctx) as Agent,
+    note:
+      'The shipped Web bundle mounts this root-agent-scoped tool with approval required. It only commits a launcher restart after its successful turn concludes and all registered Agents and jobs are idle; update, build, test, and rollback policy remain outside the tool.',
+  },
   {
     pkg: '@deepseek-ai/dsh-tool-ask-user',
     dir: 'tool-ask-user',

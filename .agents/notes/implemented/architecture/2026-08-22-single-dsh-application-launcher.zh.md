@@ -16,6 +16,8 @@ Python SDK 通过四个平台 wheel 包分发原生可执行文件。其打包�
 
 所有受支持的 Node 应用都通过 `dsh` CLI 与一个具名 profile 启动。随附应用命令是 `dsh web`、`dsh --profile headless`、`dsh --profile sdk`、`dsh --profile sdk-minimal` 与 `dsh --profile acp`；`dsh web` 是刻意为 `--profile web` 保留的便捷别名，不是另一个应用入口。
 
+CLI 会在 Web profile worker 外保留一个极薄的 supervisor，使经过验证的更新可以通过[受监督的自更新重启](../feature/2026-09-05-supervised-web-self-update-restart.zh.md)替换该 worker。这仍是一个 `dsh` 应用入口与一个具名 profile；父进程只持有 worker 替换与信号转发，Cordis 应用仍位于 worker 内。Headless、SDK、SDK-minimal 与 ACP profile 直接运行。
+
 Vendor CLI、仅用于构建和测试的可执行文件、进程内直接挂载插件以及私有浏览器 WebWorker 预览都不属于应用启动清单。包应用 bin 或直接启动包入口的根 demo 都不是可接受的扩展点。
 
 ### Profile 应用

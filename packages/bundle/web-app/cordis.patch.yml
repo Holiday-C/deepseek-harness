@@ -432,6 +432,14 @@
 # composition. This row only names the default and any deployment-added
 # `roots`; no launcher patching is involved.
 - insert:
+    # Host-owned because restart replaces the whole Web application. The
+    # plugin installs its tool into each root agent's own tool scope; subagents
+    # never receive process-lifecycle authority.
+    - id: app-restart
+      name: '@deepseek-ai/dsh-app-restart'
+      config:
+        requireApproval: true
+
     - id: agent-presets
       name: '@deepseek-ai/dsh-agent-presets'
       config:

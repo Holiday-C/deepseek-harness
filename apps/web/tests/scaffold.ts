@@ -614,12 +614,15 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     ctx.provide('dshHomePath', dshHomePath)
     // A host with no command line still provides one: the web bundle's startup
     // row releases the rows waiting on it, and with no arguments each starts on
-    // the values this scaffold composed above. An exit request can only come
-    // from a rejected argument, which a fixed empty list has none of.
+    // the values this scaffold composed above. The inert restart callback keeps
+    // the shipped root-agent tool in schema snapshots; no fixture calls it.
     provideCmdline(ctx, {
       args: [],
       exit: (code) => {
         throw new Error(`web e2e scaffold: the web app requested exit ${String(code)} with no arguments to reject`)
+      },
+      restart: () => {
+        throw new Error('web e2e scaffold: a snapshot fixture requested application restart')
       },
     })
     await ctx.plugin(Loader)

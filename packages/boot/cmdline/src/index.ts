@@ -52,6 +52,24 @@ export interface AppReady {
   onReady(listener: () => void): () => void
 }
 
+/** One exclusive application-restart request reserved from the launcher. */
+export interface AppRestartRequest {
+  /** Commit the reserved restart. Repeated calls have no effect. */
+  commit(): void
+  /** Release the reservation without restarting. Repeated calls have no effect. */
+  cancel(): void
+}
+
+/** Launcher-owned application restart reservation. */
+export interface AppRestart {
+  /**
+   * Reserve the next restart so concurrent callers cannot race process exit.
+   * @returns the request that can be committed or cancelled exactly once.
+   * @throws when another request still owns the reservation.
+   */
+  prepare(): AppRestartRequest
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     /** The invocation's inner arguments; provided by a launcher before the tree mounts. */
@@ -60,6 +78,8 @@ declare module '@deepseek-ai/cordis' {
     appExit?: AppExit
     /** Successful startup signal; provided by a launcher before the tree mounts. */
     appReady?: AppReady
+    /** Restart reservation; provided only when a launcher supervises this application. */
+    appRestart?: AppRestart
   }
 }
 
@@ -71,21 +91,52 @@ export interface CmdlineHost {
   exit: AppExit
   /** Successful startup signal for lifecycle work that must not mask boot failure. */
   ready?: AppReady
+  /** Supervised restart request; absent from directly launched applications. */
+  restart?: () => void
 }
 
 /**
  * Provide launcher facts on a host context before any tree entry mounts: the
- * command line, bounded exit request, and optional successful-startup signal.
+ * command line, bounded exit request, optional successful-startup signal, and
+ * optional supervised-restart reservation.
  * An embedding host with no command line provides an empty argument list; a
  * host that mounts a stdio application also provides readiness.
  * @param ctx - the host context the tree will mount under.
- * @param host - the invocation's arguments, exit request, and optional readiness signal.
+ * @param host - the invocation's arguments, exit request, optional readiness signal, and optional restart callback.
  */
 export function provideCmdline(ctx: Context, host: CmdlineHost): void {
   const snapshot: readonly string[] = Object.freeze([...host.args])
   ctx.provide('cmdlineArgs', { get: () => snapshot })
   ctx.provide('appExit', host.exit)
   if (host.ready !== undefined) ctx.provide('appReady', host.ready)
+  const restart = host.restart
+  if (restart !== undefined) {
+    let reserved = false
+    ctx.provide('appRestart', {
+      prepare() {
+        if (reserved) throw new Error('application restart is already reserved')
+        reserved = true
+        let settled = false
+        return {
+          commit() {
+            if (settled) return
+            settled = true
+            try {
+              restart()
+            } catch (error) {
+              reserved = false
+              throw error
+            }
+          },
+          cancel() {
+            if (settled) return
+            settled = true
+            reserved = false
+          },
+        }
+      },
+    })
+  }
 }
 
 /** Process stdin operations used to bind a stdio application's lifetime. */

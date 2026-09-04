@@ -269,6 +269,7 @@
     { "path": "./packages/bundle/sdk-minimal" },
     { "path": "./packages/bundle/web-app" },
     { "path": "./packages/boot/app-boot" },
+    { "path": "./packages/boot/app-restart" },
     { "path": "./packages/boot/cmdline" },
     { "path": "./packages/sdk/server" },
     { "path": "./packages/test-support/llm-replay" },

@@ -18,6 +18,8 @@ The `dsh` command is the sole supported Node application launcher: profiles are 
 
 The invoking directory is the default workspace root. The `web`, `headless`, `sdk`, `sdk-minimal`, and `acp` profiles auto-initialize on first use from shipped templates; any other profile must be created through `dsh plugin`.
 
+`dsh web` keeps a thin supervisor process above the profile worker. A successful `restart_dsh` call shuts down that worker with a private restart status, and the already-loaded supervisor starts the same entry path and arguments again, so a just-built checkout can replace the code serving the page. Other profile modes run directly. Ordinary exit codes and signals are never treated as restart requests; `Ctrl+C` and `SIGTERM` are forwarded to the worker and stop the supervisor.
+
 ## App arguments
 
 The launcher parses only its own flags and hands everything after them to the booted profile, where any injected app plugin may parse the shared immutable snapshot ([`dsh-cmdline`](../../packages/boot/cmdline/README.md)). The first token the launcher does not recognize starts the app's arguments:
@@ -52,4 +54,4 @@ The [CLI behavior reference](reference/README.md) owns exact layer precedence, f
 
 ## Development
 
-Production runs require built package and frontend artifacts. From the repository root, run `pnpm run build` separately, then use `pnpm dsh <args...>` to run the TypeScript entry and forward every argument; the [source-execution reference](reference/README.md#source-execution) owns the module-resolution contract.
+Production runs require built package and frontend artifacts. From the repository root, run `pnpm run build` separately, then use `pnpm dsh <args...>` to run the TypeScript entry and forward every argument; a running Web agent may perform that build and call `restart_dsh` only after it succeeds. The [source-execution reference](reference/README.md#source-execution) owns the module-resolution contract.

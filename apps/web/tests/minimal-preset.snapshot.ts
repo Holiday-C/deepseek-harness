@@ -130,6 +130,7 @@ describe('minimal agent preset', () => {
         "prompt": "You are a helpful software engineer assistant.",
         "tools": [
           "bash",
+          "restart_dsh",
           "str_replace_editor",
         ],
       }
