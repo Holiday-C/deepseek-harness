@@ -380,6 +380,13 @@ describe('Personal fork CI workflow', () => {
       'windows-build',
       'windows-native-tests',
     ])
+
+    const windowsNative = workflowJob(workflow, 'windows-native-tests')
+    if (!Array.isArray(windowsNative.steps)) throw new TypeError('fork Windows native job must define steps')
+    const nativeCommand = windowsNative.steps.filter(isRecord)
+      .find(step => step.name === 'Run Windows-specific native tests')?.run
+    expect(nativeCommand).toContain('foreach ($spec in $specs)')
+    expect(nativeCommand).toContain('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }')
   })
 
   it('skips source-repository automation before a fork allocates a runner', () => {

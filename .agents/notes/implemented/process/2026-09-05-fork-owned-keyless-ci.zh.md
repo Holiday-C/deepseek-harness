@@ -14,7 +14,7 @@ GitHub Fork 会获得源仓库的 workflow 文件，但不会继承组织运行�
 
 [`Fork CI`](../../../../.github/workflows/fork-ci.yml) 对目标为 `custom/main` 的 Pull Request 和 `custom/main` 推送运行。每个 job 都检出触发提交，并使用 GitHub 标准托管的 `ubuntu-24.04` 或 `windows-2025` 运行器。该 workflow 不使用仓库 Secrets、Variables、Environments、Actions 缓存、跨 workflow artifact 下载、自定义运行器标签或自托管运行器选择器。
 
-Fork 聚合流程要求仓库的静态检查、覆盖率、消费者检查、Node 兼容性、Python SDK、Wine Windows、原生 Windows 构建和原生 Windows 测试命令全部成功。降低后的工作线程数量适配标准托管容量。真实 provider 测试、部署预览、源仓库运行器基准测试和发布形态的 Python 运行时矩阵不属于这个无凭据聚合流程。
+Fork 聚合流程要求仓库的静态检查、覆盖率、消费者检查、Node 兼容性、Python SDK、Wine Windows、原生 Windows 构建和原生 Windows 测试命令全部成功。降低后的工作线程数量适配标准托管容量。原生 Windows job 为每个选定 spec 启动独立的 Vitest 进程，因此退出的 worker 不会丢弃其他 spec 已完成的结果。真实 provider 测试、部署预览、源仓库运行器基准测试和发布形态的 Python 运行时矩阵不属于这个无凭据聚合流程。
 
 目标为 `custom/main` 的 Pull Request 不会触发源仓库 CI、Cloudflare 预览部署、Issue App 自动化或自动真实 API E2E workflow。源仓库 CI、`master` 运行器检查、部署、Issue App 和自动真实 API job 还会在分配 job 时检查 `github.event.repository.fork == false`。其他 Fork 事件会在 GitHub 选择运行器或向 job 提供凭据前跳过这些 job。同一批文件在非 Fork 仓库运行时，workflow 定义会保留源仓库行为。
 
