@@ -409,6 +409,8 @@ function bootPatches(
   if (jsonl !== undefined) {
     patches.push({ id: 'session-persistence-jsonl', config: { ...configOf(jsonl), compression: 'none' } })
   }
+  // A browser worker has no stable outer process that can fulfill appRestart.
+  patches.push({ id: 'app-restart', disabled: true })
   return { patches, presetOverlay }
 }
 

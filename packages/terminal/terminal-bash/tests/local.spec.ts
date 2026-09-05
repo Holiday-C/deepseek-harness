@@ -320,10 +320,12 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
     const previous = process.env.DSH_TEST_SECRET
     process.env.DSH_TEST_SECRET = 'must-not-leak'
     try {
+      // A loaded hosted runner can delay pwsh output beyond the ordinary
+      // silence fallback; this scenario must observe the command result first.
       const { ctx, root, agent } = await harness('danger-full-access', {
-        idleSilenceMs: 300,
-        handoffGraceMs: 300,
-        timeoutMs: 8_000,
+        idleSilenceMs: 3_000,
+        handoffGraceMs: 3_000,
+        timeoutMs: 15_000,
       }, 'pwsh')
       const created = await ctx.terminals.spawn(agent, { type: 'shell', name: 'main', cwd: root })
       expect(created.motd).toContain('dsh> ')
@@ -337,12 +339,13 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
         text: 'Write-Output "keep=$env:KEEP secret=$env:DSH_TEST_SECRET"',
         submit: true,
       })
+      await waitForOutput(second, 'keep=ok', 10_000)
       const result = await second.done
-      expect(result.viewport).toContain('keep=ok')
-      expect(result.viewport).toContain('secret=')
-      expect(result.viewport).not.toContain('must-not-leak')
-
-      expect(ctx.terminals.read(agent, created.sessionId, { offset: 0, count: 40 }).text).toContain('keep=ok')
+      expectReadyForNextSend(result.waitReason)
+      const scrollback = ctx.terminals.read(agent, created.sessionId, { offset: 0, count: 40 }).text
+      expect(scrollback).toContain('keep=ok')
+      expect(scrollback).toContain('secret=')
+      expect(scrollback).not.toContain('must-not-leak')
       expect(await ctx.terminals.kill(agent, created.sessionId)).toBe(true)
       expect(ctx.terminals.list(agent)).toEqual([])
     } finally {

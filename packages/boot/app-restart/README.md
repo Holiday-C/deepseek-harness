@@ -110,6 +110,7 @@ Append-only; the call and result follow the reusable request prefix.
 <a id="known-limitations-and-deferred-work"></a>
 
 - Only `dsh web` is supervised; headless, SDK, ACP, plugin-management, and config-dump invocations keep their existing direct process lifecycle.
+- The static browser-worker preview disables this plugin because it has no stable launcher process to fulfill a restart reservation.
 - Restart briefly interrupts HTTP and WebSocket connections; this is reconnect-based continuity, not zero-downtime socket handoff.
 - The package does not resume an unfinished update after a crash. Source control and build recovery remain the update manual's responsibility.
 

@@ -110,6 +110,7 @@ assistant 历史会记录一次空参数调用。成功调用会记录 `DSH rest
 <a id="known-limitations-and-deferred-work"></a>
 
 - 只有 `dsh web` 受 supervisor 管理；headless、SDK、ACP、插件管理与配置 dump 调用保持现有的直接进程生命周期。
+- 静态浏览器 worker 预览会禁用本插件，因为它没有能够兑现重启预约的稳定 launcher 进程。
 - 重启会短暂中断 HTTP 与 WebSocket 连接；这是基于重连的连续性，不是零停机 socket 交接。
 - 本包不会在崩溃后恢复未完成的更新。源码控制和构建恢复仍由更新手册负责。
 
