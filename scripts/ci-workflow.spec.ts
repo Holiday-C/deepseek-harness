@@ -4,12 +4,13 @@ import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')
+const upstreamOnly = 'github.event.repository.fork == false'
 const runnerPrivatePnpmDestination = /^\$\{\{ runner\.temp \}\}\/setup-pnpm-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}$/
 const nativeWindowsPnpmDestination = '${{ runner.temp }}/setup-pnpm-js-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}'
 
 describe('CI workflow', () => {
   it('isolates every pnpm action setup destination per runner', () => {
-    const files = ['.github/workflows/ci.yml', '.github/workflows/ci-master.yml']
+    const files = ['.github/workflows/ci.yml', '.github/workflows/ci-master.yml', '.github/workflows/fork-ci.yml']
     const setups: Array<{ jobName: string; step: unknown }> = []
     for (const file of files) {
       const workflow: unknown = yaml.load(readFileSync(resolve(root, file), 'utf8'))
@@ -95,7 +96,7 @@ describe('CI workflow', () => {
     // Required PR job: Wine on ubuntu-latest, runs wine-windows-gates.sh.
     expect(windows['runs-on']).toBe('ubuntu-latest')
     expect(windows.name).toBe('windows node 24 / wine blocking')
-    expect(windows.if).toBe("github.event_name == 'pull_request'")
+    expect(windows.if).toBe(`${upstreamOnly} && github.event_name == 'pull_request'`)
     expect(commandSteps.some(step => step.run.includes('wine-windows-gates.sh'))).toBe(true)
 
     // The split native jobs all resolve their pool through the Windows switch.
@@ -106,7 +107,7 @@ describe('CI workflow', () => {
       expect(job['runs-on']).toContain('self-hosted')
       expect(job['runs-on']).toContain('dsh-win-ci')
       expect(job['runs-on']).toContain('dsh-windows-2025-16core')
-      expect(job.if).toBe("github.event_name == 'pull_request'")
+      expect(job.if).toBe(`${upstreamOnly} && github.event_name == 'pull_request'`)
     }
 
     // windows-build runs the blocking build/site pair.
@@ -143,11 +144,11 @@ describe('CI workflow', () => {
     expect(windowsObservational['continue-on-error']).toBe(true)
 
     // wine-apt-cache: master-only, seeds the Wine apt cache, lives in ci-master.
-    expect(wineAptCache.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
+    expect(wineAptCache.if).toBe(`${upstreamOnly} && github.event_name == 'push' && github.ref == 'refs/heads/master'`)
     expect(wineAptCache['runs-on']).toBe('ubuntu-latest')
 
     // serial-windows: master-only standby, self-hosted, non-blocking, lives in ci-master.
-    expect(serialWindows.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
+    expect(serialWindows.if).toBe(`${upstreamOnly} && github.event_name == 'push' && github.ref == 'refs/heads/master'`)
     expect(serialWindows['runs-on']).toEqual(['self-hosted', 'dsh-win-ci', 'windows'])
     expect(serialWindows.name).toBe('serial / windows (self-hosted standby)')
 
@@ -226,15 +227,15 @@ describe('CI workflow', () => {
       if (!isRecord(job)) throw new TypeError(`${name} must be defined`)
       expect(job.concurrency).toBeUndefined()
       // Both stay master-push-only; that is what makes the push carve-out safe.
-      expect(job.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
+      expect(job.if).toBe(`${upstreamOnly} && github.event_name == 'push' && github.ref == 'refs/heads/master'`)
     }
 
     // What bounds the cost of exempting push: a master push may only carry the
     // cache seeder and the two drills. Any job reachable on push would start
     // accumulating uncancelled runs, so the set is pinned here.
     const NOT_PUSH_REACHABLE = new Set([
-      "github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark'",
-      "github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark'",
+      `${upstreamOnly} && github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark'`,
+      `${upstreamOnly} && github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark'`,
     ])
     const pushReachable = Object.entries(workflow.jobs)
       .filter(([, job]) => {
@@ -279,7 +280,7 @@ describe('CI workflow', () => {
     }
 
     expect(pythonRuntime).toMatchObject({
-      if: "github.event_name == 'pull_request'",
+      if: `${upstreamOnly} && github.event_name == 'pull_request'`,
       name: 'python runtime / release-shaped matrix',
       uses: './.github/workflows/build-exe-for-python-sdk.yml',
       with: {
@@ -302,6 +303,13 @@ describe('CI workflow', () => {
 })
 
 describe('DeepSeek e2e workflow', () => {
+  it('does not consume repository credentials automatically in a fork', () => {
+    const workflow = loadWorkflow('.github/workflows/e2e.yml')
+    const e2e = workflowJob(workflow, 'e2e')
+
+    expect(e2e.if).toContain(upstreamOnly)
+  })
+
   it('prepares bubblewrap from the pinned payload without a package transaction', () => {
     const workflow = loadWorkflow('.github/workflows/e2e.yml')
     const e2e = workflowJob(workflow, 'e2e')
@@ -321,6 +329,96 @@ describe('DeepSeek e2e workflow', () => {
 
     const step = e2e.steps.filter(isRecord).find(candidate => candidate.name === 'E2E tests (real DeepSeek API)')
     expect(step).toMatchObject({ env: { DSH_E2E_MAX_WORKERS: 4 } })
+  })
+})
+
+describe('Personal fork CI workflow', () => {
+  it('runs the custom integration branch without source-repository infrastructure', () => {
+    const workflow = loadWorkflow('.github/workflows/fork-ci.yml')
+    const pullRequest = workflowEvent(workflow, 'pull_request')
+    const push = workflowEvent(workflow, 'push')
+    if (!isRecord(workflow.jobs)) throw new TypeError('fork-ci.yml must define jobs')
+
+    expect(pullRequest.branches).toEqual(['custom/main'])
+    expect(push.branches).toEqual(['custom/main'])
+    expect(workflow.env).toMatchObject({ TZ: 'Asia/Shanghai' })
+
+    const source = JSON.stringify(workflow)
+    for (const forbidden of [
+      'secrets.',
+      'vars.',
+      'environment',
+      'self-hosted',
+      'dsh-ubuntu-24-04-16core',
+      'dsh-windows-2025-16core',
+      'actions/cache',
+      'actions/download-artifact',
+      'actions/upload-artifact',
+    ]) {
+      expect(source, `fork CI must not contain ${forbidden}`).not.toContain(forbidden)
+    }
+
+    for (const [jobName, job] of Object.entries(workflow.jobs)) {
+      if (!isRecord(job)) throw new TypeError(`${jobName} must be a workflow job`)
+      expect(['ubuntu-24.04', 'windows-2025'], `${jobName} must use a GitHub-hosted runner`).toContain(job['runs-on'])
+      if (!Array.isArray(job.steps)) continue
+      for (const step of job.steps) {
+        if (!isRecord(step) || typeof step.uses !== 'string' || !step.uses.startsWith('actions/checkout@')) continue
+        expect(step.with).toMatchObject({ 'persist-credentials': false })
+        expect((step.with as Record<string, unknown>).ref).toBeUndefined()
+        expect((step.with as Record<string, unknown>).repository).toBeUndefined()
+      }
+    }
+
+    const aggregate = workflowJob(workflow, 'all-checks-passed')
+    expect(aggregate.needs).toEqual([
+      'node-24',
+      'node-24-coverage',
+      'node-24-consumers',
+      'node-compat',
+      'python-sdk',
+      'wine',
+      'windows-build',
+      'windows-native-tests',
+    ])
+
+    const windowsNative = workflowJob(workflow, 'windows-native-tests')
+    if (!Array.isArray(windowsNative.steps)) throw new TypeError('fork Windows native job must define steps')
+    const nativeCommand = windowsNative.steps.filter(isRecord)
+      .find(step => step.name === 'Run Windows-specific native tests')?.run
+    expect(nativeCommand).toContain('foreach ($spec in $specs)')
+    expect(nativeCommand).toContain('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }')
+    expect(nativeCommand).toContain('workflow-worker-thread/tests/workflow-worker-thread.spec.ts')
+    expect(nativeCommand).toContain("-t 'workerSpawnEnv injects the host temp path on win32'")
+  })
+
+  it('skips source-repository automation before a fork allocates a runner', () => {
+    const guardedJobs: Array<[string, string[]]> = [
+      ['.github/workflows/build-preview-cloudflare.yml', ['preview']],
+      ['.github/workflows/issue-lifecycle.yml', ['lifecycle']],
+      ['.github/workflows/issue-policy.yml', ['policy']],
+      ['.github/workflows/e2e.yml', ['e2e']],
+    ]
+
+    for (const [file, jobNames] of guardedJobs) {
+      const workflow = loadWorkflow(file)
+      expect(workflowEvent(workflow, 'pull_request')['branches-ignore']).toContain('custom/main')
+      for (const jobName of jobNames) {
+        expect(workflowJob(workflow, jobName).if, `${file}:${jobName} must reject fork events`).toContain(upstreamOnly)
+      }
+    }
+
+    for (const file of ['.github/workflows/ci.yml', '.github/workflows/ci-master.yml']) {
+      const workflow = loadWorkflow(file)
+      if (!isRecord(workflow.jobs)) throw new TypeError(`${file} must define jobs`)
+      if (file.endsWith('/ci.yml')) {
+        expect(workflowEvent(workflow, 'pull_request')['branches-ignore']).toContain('custom/main')
+      }
+      for (const [jobName, job] of Object.entries(workflow.jobs)) {
+        if (!isRecord(job) || job.if === false) continue
+        expect(job.if, `${file}:${jobName} must reject fork events`).toContain(upstreamOnly)
+      }
+    }
   })
 })
 
@@ -569,13 +667,13 @@ describe('Issue lifecycle workflow', () => {
     const lifecycleJob = workflowJob(lifecycle, 'lifecycle')
     if (!Array.isArray(lifecycleJob.steps)) throw new TypeError('Issue lifecycle job must define steps')
 
-    // The job has no job-level `if`, so it is listed on every pull_request /
-    // pull_request_review event and reports success instead of a gray skip. The
-    // write-capable steps are gated at step level so approved/commented reviews
-    // never mint a Project/Issue App token nor touch the board.
+    // Forks do not inherit the source repository's App installation or board.
+    // The job remains listed for the source repository and skips before runner
+    // allocation in every fork.
     expect(lifecycle.on).toHaveProperty('pull_request')
     expect(lifecycle.on).toHaveProperty('pull_request_review')
-    expect(lifecycleJob.if).toBeUndefined()
+    expect(lifecycleJob.if).toBe(upstreamOnly)
+    expect(workflowJob(policy, 'policy').if).toBe(upstreamOnly)
     // Keep the subscription-type gates: issue-lifecycle does not re-subscribe
     // ready_for_review (issue-policy owns that) and only reacts to submitted
     // review events.

@@ -40,7 +40,7 @@ The final idle check repeats the concurrency precondition. If new Agent or job w
 
 ### Documentation and composition
 
-The Web bundle mounts the restart consumer; other profiles do not. The application-launch architecture, CLI README, boot group map, `dsh-cmdline` README, generated catalogs, and personal fork update manual describe the supervisor, the brief reconnect window, the explicit approval, and the separation between update preparation and restart commit.
+The Web bundle mounts the restart consumer; other profiles do not. The static browser-worker preview disables that row during its runtime boot patches because no launcher process remains outside its plugin tree to fulfill `appRestart`. The application-launch architecture, CLI README, boot group map, `dsh-cmdline` README, generated catalogs, and personal fork update manual describe the supervisor, the brief reconnect window, the explicit approval, and the separation between update preparation and restart commit.
 
 The existing dynamic Cordis package proposal remains independent: it changes temporary plugins inside one process, while this feature replaces the complete Web application process after repository or installation changes.
 
@@ -65,7 +65,7 @@ The [single dsh application launcher](../architecture/2026-08-22-single-dsh-appl
 - Focused launcher tests cover respawn, signal forwarding, restart suppression during shutdown, and ordinary exit propagation.
 - A real source CLI test starts two Web worker generations under one supervisor, preserving the port while rotating the launch token.
 - App-restart and cmdline tests cover default approval, root-only scope, Agent/job concurrency refusal, exclusive reservation, turn conclusion, quiescent commit, cancellation, teardown, and contained launcher failure.
-- Keyless Web snapshots pin `restart_dsh` in standard and minimal native schemas and in the generated PTC SDK prompt.
+- Keyless Web snapshots pin `restart_dsh` in standard and minimal native schemas and in the generated PTC SDK prompt; preview boot verifies that the browser-worker tree omits the unsupported restart consumer.
 - The complete build, focused Web replay, generated-catalog freshness, package constraints, invariant wiring, documentation checks, and lint run over the shipped composition.
 
 ## Consequences

@@ -49,6 +49,7 @@ const EXPECTED_TOOLS = [
   'ralph',
   'read',
   'read_image',
+  'restart_dsh',
   'send_message',
   'skill',
   'subagent',
