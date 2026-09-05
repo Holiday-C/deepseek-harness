@@ -237,7 +237,6 @@ jobs:
         run: |
           $specs = @(
             'packages/shell/tool-pwsh/tests/loader.spec.ts'
-            'packages/workflow/workflow-worker-thread/tests/workflow-worker-thread.spec.ts'
             'packages/workflow/tool-ralph/tests/integration.spec.ts'
             'packages/subprocess/subprocess-local/tests/process-exit.spec.ts'
             'packages/session/session-persistence-sqlite/tests/differential.spec.ts'
@@ -246,6 +245,8 @@ jobs:
             pnpm exec vitest run --no-file-parallelism --testTimeout 90000 $spec
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+          pnpm exec vitest run --no-file-parallelism --testTimeout 90000 packages/workflow/workflow-worker-thread/tests/workflow-worker-thread.spec.ts -t 'workerSpawnEnv injects the host temp path on win32'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   all-checks-passed:
     name: fork checks passed

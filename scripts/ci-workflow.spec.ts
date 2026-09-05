@@ -388,6 +388,8 @@ describe('Personal fork CI workflow', () => {
       .find(step => step.name === 'Run Windows-specific native tests')?.run
     expect(nativeCommand).toContain('foreach ($spec in $specs)')
     expect(nativeCommand).toContain('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }')
+    expect(nativeCommand).toContain('workflow-worker-thread/tests/workflow-worker-thread.spec.ts')
+    expect(nativeCommand).toContain("-t 'workerSpawnEnv injects the host temp path on win32'")
   })
 
   it('skips source-repository automation before a fork allocates a runner', () => {
