@@ -2,7 +2,7 @@
 
 DeepSeek Harness is an all-plugin Cordis harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; documentation follows [docs/AGENTS.md](docs/AGENTS.md).
 
-For DSH update, sync, or redeployment requests, follow the [personal fork update and redeployment manual](FORK_UPDATE_AND_DEPLOY_GUIDE.md).
+For DSH updates, sync, or redeployment, use [dsh-update](.agents/skills/dsh-update/SKILL.md) following the [personal fork update and redeployment manual](FORK_UPDATE_AND_DEPLOY_GUIDE.md).
 
 ## Pre-release stance: foundation over blast radius
 
