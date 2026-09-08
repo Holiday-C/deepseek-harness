@@ -57,7 +57,7 @@ Tool failure, result replacement, agent disposal, plugin unload, or a newly busy
 | File | Role |
 |---|---|
 | [`src/index.ts`](src/index.ts) | Root-agent tool installation, approval, busy checks, reservation commit and cancellation |
-| [`src/invariant.ts`](src/invariant.ts) | Empty invariant companion; the owning lifecycle registries carry the checked relationships |
+| — | No runtime invariant companion is published; the launcher owns restart reservations and the Agent, Tools, and Jobs registries own the lifecycle facts consulted before this adapter commits one. |
 | [`tests/app-restart.spec.ts`](tests/app-restart.spec.ts) | Scope, approval, concurrency, quiescence, and teardown coverage |
 
 </details>

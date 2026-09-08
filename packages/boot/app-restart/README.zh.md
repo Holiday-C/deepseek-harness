@@ -57,7 +57,7 @@ CLI supervisor 持有进程替换，并向其 Web worker 暴露一个排他的 `
 | 文件 | 职责 |
 |---|---|
 | [`src/index.ts`](src/index.ts) | 根 agent 工具安装、审批、繁忙检查、预约提交与取消 |
-| [`src/invariant.ts`](src/invariant.ts) | 空的不变式伴生插件；生命周期注册表的所属包负责检查相关关系 |
+| — | 不发布运行时不变式伴生入口；launcher 持有重启预约，Agent、Tools 与 Jobs 注册表持有本适配器提交前所依据的生命周期事实。 |
 | [`tests/app-restart.spec.ts`](tests/app-restart.spec.ts) | 范围、审批、并发、静止与拆卸覆盖 |
 
 </details>
