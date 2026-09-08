@@ -4,6 +4,8 @@
   - button "Session log":
     - text: Session log
     - img
+  - button "Open the sidebar":
+    - img
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
@@ -29,7 +31,10 @@
   - img
 - button "Branch into a new conversation":
   - img
-- text: 7/25 {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Ran for {{duration}}":
+  - img
+  - text: Ran for {{duration}}
+- text: 7/25 {{clock}}
 - button "compact Compacted 5 history items (~{{tokens}} tokens)"
 - button "Context injection AGENTS.md":
   - img
@@ -37,6 +42,8 @@
   - text: Context injection AGENTS.md
 - textbox "Message or run a task... / commands, @ files or sessions"
 - button "Commands":
+  - img
+- button "Add attachment":
   - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current DeepSeek-V4-Flash":

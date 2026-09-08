@@ -16,7 +16,7 @@
 | `dsh web` | `--profile web` 的别名。 |
 | `dsh plugin --profile <name> <pnpm args>` | 通过在 profile 目录中转发给 pnpm 来管理该 profile 的插件。 |
 
-运行命令时所在的目录将作为默认 workspace 根目录。`web`、`headless`、`sdk`、`sdk-minimal` 和 `acp` profile 在首次使用时会从随附模板自动初始化；其他任何 profile 都必须通过 `dsh plugin` 创建。
+运行命令时所在的目录将作为默认 workspace 根目录。`web`、`headless`、`sdk`、`sdk-minimal` 和 `acp` profile 在首次使用时会从随附模板自动初始化；其他任何 profile 都必须通过 `dsh plugin` 创建。`desktop` 名称保留给 Electron 持有的 profile，因此 CLI 会拒绝针对它的启动、配置 dump 和插件管理请求。
 
 `dsh web` 会在 profile worker 之上保留一个极薄的 supervisor 进程。成功调用 `restart_dsh` 会让该 worker 以私有重启状态关闭，已经加载的 supervisor 随即用相同入口路径和参数重新启动，因此刚完成构建的 checkout 可以替换正在服务页面的代码。其他 profile 模式直接运行。普通退出码与信号绝不会被解释成重启请求；`Ctrl+C` 与 `SIGTERM` 会转发给 worker 并停止 supervisor。
 

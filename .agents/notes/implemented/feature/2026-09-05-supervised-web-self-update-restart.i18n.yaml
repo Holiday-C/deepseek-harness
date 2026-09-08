@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-05-supervised-web-self-update-restart.md
-2026-09-05-supervised-web-self-update-restart.md: c2c14e9bd2be03fc89910da499a237e672e65d36
-2026-09-05-supervised-web-self-update-restart.zh.md: 5a60cdfc2bf89f422edacbbdf77aebb2ca8e762b
+2026-09-05-supervised-web-self-update-restart.md: 2b1a64ca982e533f998a36b427df14e1cf20617c
+2026-09-05-supervised-web-self-update-restart.zh.md: 81b863aa3c345aa9b168ddbcd08116c5be52ef08

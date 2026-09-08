@@ -46,7 +46,7 @@ The existing dynamic Cordis package proposal remains independent: it changes tem
 
 ## Existing decisions and supersession
 
-The [single dsh application launcher](../architecture/2026-08-22-single-dsh-application-launcher.md) remains authoritative and records this supervised Web worker as an extension of the same CLI/profile entry. The [Web GUI feedback loop](../bug-fix/2026-07-28-web-gui-feedback-loop.md) remains authoritative for ordinary Client artifact edits, which need only browser reload; this decision adds an explicit handoff after a verified whole-application update and does not restart after every edit. The [dynamic Cordis package runtime](../../proposed/architecture/2026-08-08-cordis-web-dynamic-packages.md) remains active for temporary process-local extension. No active note is fully superseded or eligible for archival.
+The [single dsh application launcher](../architecture/2026-08-22-single-dsh-application-launcher.md) remains authoritative and records this supervised Web worker as an extension of the same CLI/profile entry. The [Web GUI feedback loop](../../archived/bug-fix/2026-07-28-web-gui-feedback-loop.md) remains authoritative for ordinary Client artifact edits, which need only browser reload; this decision adds an explicit handoff after a verified whole-application update and does not restart after every edit. The [dynamic Cordis package runtime](../../rejected/architecture/2026-08-08-cordis-web-dynamic-packages.md) remains active for temporary process-local extension. No active note is fully superseded or eligible for archival.
 
 ## Alternatives considered
 

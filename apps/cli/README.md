@@ -16,7 +16,7 @@ The `dsh` command is the sole supported Node application launcher: profiles are 
 | `dsh web` | Alias of `--profile web`. |
 | `dsh plugin --profile <name> <pnpm args>` | Manage a profile's plugins by forwarding to pnpm in the profile directory. |
 
-The invoking directory is the default workspace root. The `web`, `headless`, `sdk`, `sdk-minimal`, and `acp` profiles auto-initialize on first use from shipped templates; any other profile must be created through `dsh plugin`.
+The invoking directory is the default workspace root. The `web`, `headless`, `sdk`, `sdk-minimal`, and `acp` profiles auto-initialize on first use from shipped templates; any other profile must be created through `dsh plugin`. The `desktop` name is reserved for the Electron-owned profile, so the CLI rejects boot, config-dump, and plugin-management requests for it.
 
 `dsh web` keeps a thin supervisor process above the profile worker. A successful `restart_dsh` call shuts down that worker with a private restart status, and the already-loaded supervisor starts the same entry path and arguments again, so a just-built checkout can replace the code serving the page. Other profile modes run directly. Ordinary exit codes and signals are never treated as restart requests; `Ctrl+C` and `SIGTERM` are forwarded to the worker and stop the supervisor.
 

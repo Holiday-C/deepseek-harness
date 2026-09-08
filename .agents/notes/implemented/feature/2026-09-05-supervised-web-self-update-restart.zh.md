@@ -46,7 +46,7 @@ Web bundle 挂载重启 consumer，其他 profile 不挂载。静态浏览器 wo
 
 ## 现有决策与取代关系
 
-[单一 dsh 应用启动器](../architecture/2026-08-22-single-dsh-application-launcher.zh.md)继续保持权威，并把受监督的 Web worker 记录为同一 CLI/profile 入口的扩展。[Web GUI 反馈循环](../bug-fix/2026-07-28-web-gui-feedback-loop.zh.md)继续负责普通 Client 产物编辑，这些编辑只需浏览器重载；本决策增加经过验证的整应用更新后的显式交接，不会在每次编辑后重启。[动态 Cordis 包运行时](../../proposed/architecture/2026-08-08-cordis-web-dynamic-packages.zh.md)继续负责临时的进程本地扩展。没有任何 active note 被完全取代或符合归档条件。
+[单一 dsh 应用启动器](../architecture/2026-08-22-single-dsh-application-launcher.zh.md)继续保持权威，并把受监督的 Web worker 记录为同一 CLI/profile 入口的扩展。[Web GUI 反馈循环](../../archived/bug-fix/2026-07-28-web-gui-feedback-loop.md)继续负责普通 Client 产物编辑，这些编辑只需浏览器重载；本决策增加经过验证的整应用更新后的显式交接，不会在每次编辑后重启。[动态 Cordis 包运行时](../../rejected/architecture/2026-08-08-cordis-web-dynamic-packages.zh.md)继续负责临时的进程本地扩展。没有任何 active note 被完全取代或符合归档条件。
 
 ## 考虑过的替代方案
 

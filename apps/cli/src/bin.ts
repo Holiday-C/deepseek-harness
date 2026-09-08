@@ -8,6 +8,7 @@
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { loadLayeredEnv } from '@deepseek-ai/dsh-app-boot'
 import { parseDshArgs } from './args.ts'
 import { APP_RESTART_EXIT_CODE, superviseWeb, SUPERVISED_WORKER_ARG } from './supervisor.ts'
 
@@ -21,41 +22,50 @@ function readVersion(): string {
   return typeof manifest.version === 'string' ? manifest.version : '0.0.0'
 }
 
-const rawArgs = process.argv.slice(2)
-const supervisedWorker = rawArgs[0] === SUPERVISED_WORKER_ARG
-const launcherArgs = supervisedWorker ? rawArgs.slice(1) : rawArgs
-const invocation = parseDshArgs(launcherArgs, readVersion())
+/**
+ * Run the public dsh command-line interface.
+ * @returns a promise that settles when the selected command mode finishes.
+ */
+export async function runCli(): Promise<void> {
+  const rawArgs = process.argv.slice(2)
+  const supervisedWorker = rawArgs[0] === SUPERVISED_WORKER_ARG
+  const launcherArgs = supervisedWorker ? rawArgs.slice(1) : rawArgs
+  const invocation = parseDshArgs(launcherArgs, readVersion())
 
-switch (invocation.mode) {
-  case 'profile': {
-    if (invocation.profile === 'web' && !supervisedWorker) {
-      process.exitCode = await superviseWeb(launcherArgs)
+  switch (invocation.mode) {
+    case 'profile': {
+      if (invocation.profile === 'web' && !supervisedWorker) {
+        process.exitCode = await superviseWeb(launcherArgs)
+        break
+      }
+      const { runProfile } = await import('./profile-boot.ts')
+      await runProfile({
+        environment: loadLayeredEnv('dsh'),
+        profile: invocation.profile,
+        patchFiles: invocation.patches,
+        args: invocation.args,
+        ...supervisedWorker && invocation.profile === 'web'
+          ? { restartExitCode: APP_RESTART_EXIT_CODE }
+          : {},
+      })
       break
     }
-    const { loadLayeredEnv } = await import('@deepseek-ai/dsh-app-boot')
-    const { runProfile } = await import('./profile-boot.ts')
-    await runProfile({
-      environment: loadLayeredEnv('dsh'),
-      profile: invocation.profile,
-      patchFiles: invocation.patches,
-      args: invocation.args,
-      ...supervisedWorker && invocation.profile === 'web'
-        ? { restartExitCode: APP_RESTART_EXIT_CODE }
-        : {},
-    })
-    break
+    case 'plugin': {
+      const { runPlugin } = await import('./plugin.ts')
+      process.exit(runPlugin(invocation.profile, invocation.args))
+      break
+    }
+    case 'dump-config': {
+      const { runDumpConfig } = await import('./dump-config.ts')
+      runDumpConfig(invocation.profile, invocation.defaultOnly, invocation.patches)
+      break
+    }
+    default:
+      invocation satisfies never
+      throw new Error(`dsh: unhandled invocation mode ${JSON.stringify(invocation)}`)
   }
-  case 'plugin': {
-    const { runPlugin } = await import('./plugin.ts')
-    process.exit(runPlugin(invocation.profile, invocation.args))
-    break
-  }
-  case 'dump-config': {
-    const { runDumpConfig } = await import('./dump-config.ts')
-    runDumpConfig(invocation.profile, invocation.defaultOnly, invocation.patches)
-    break
-  }
-  default:
-    invocation satisfies never
-    throw new Error(`dsh: unhandled invocation mode ${JSON.stringify(invocation)}`)
+}
+
+if (import.meta.main) {
+  await runCli()
 }

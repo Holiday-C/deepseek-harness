@@ -4,6 +4,8 @@
   - button "Session log":
     - text: Session log
     - img
+  - button "Open the sidebar":
+    - img
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
@@ -47,9 +49,14 @@
   - img
 - button "Branch into a new conversation":
   - img
-- text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Ran for {{duration}}":
+  - img
+  - text: Ran for {{duration}}
+- text: {{date}} {{clock}}
 - textbox "Message or run a task... / commands, @ files or sessions"
 - button "Commands":
+  - img
+- button "Add attachment":
   - img
 - 'button "Access mode, current: Full access"': Full access
 - button "Select model, current DeepSeek-V4-Flash":
