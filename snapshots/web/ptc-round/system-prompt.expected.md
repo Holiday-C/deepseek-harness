@@ -183,6 +183,8 @@ interface ToolArgsMap {
     /** Path to the image file, resolved by the filesystem backend. */
     file_path: string;
   } & Record<string, JsonValue>;
+  /** Restart the supervised DSH Web application after an update or rebuild has completed successfully. Use this only after required checks pass. The current Web connection disconnects briefly and reconnects to the new process. */
+  restart_dsh: Record<string, JsonValue>;
   /** Send a message to a direct continuable child by its agent id. If you are a resident continuable child, you may also target your direct parent. If the target is still working, the message steers its nearest step; if it is idle, the message starts a turn. This call returns no answer from the agent — only confirmation that the message was delivered. A failure means the message was NOT delivered. */
   send_message: {
     /** The agent id of your direct continuable child, or your direct parent when you are a resident continuable child. */
@@ -427,6 +429,9 @@ interface ToolOutputMap {
         height: number;
       };
     };
+  };
+  restart_dsh: {
+    status: "restart-pending";
   };
   send_message: {
     messageId: string;
