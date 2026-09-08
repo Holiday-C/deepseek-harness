@@ -1,6 +1,7 @@
 import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
+import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent, AgentCancelCause, AgentStatus, InboxTarget } from '@deepseek-ai/dsh-agent'
+import { unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
 import JobsLocal from '@deepseek-ai/dsh-jobs-local'
 import type { JobOutcome } from '@deepseek-ai/dsh-jobs'
@@ -33,7 +34,7 @@ function stubAgent(scopeOwner: Context, rawId: string): StubAgent {
     id: session.id,
     options: {},
     session,
-    inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
+    inbox: unsupportedInbox(),
     get status() { return status },
     ctx: undefined as unknown as Context,
     send(_message: UserMessage, _target: InboxTarget, _wakeup: boolean) {},
