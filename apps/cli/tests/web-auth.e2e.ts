@@ -243,7 +243,7 @@ export function apply(ctx) {
 
       const exchange = await fetch(first.launchUrl, { redirect: 'manual' })
       expect(exchange.status).toBe(303)
-      expect(exchange.headers.get('location')).toBe('/')
+      expect(exchange.headers.get('location')).toBe('./')
       const setCookie = exchange.headers.get('set-cookie')
       if (setCookie === null) throw new Error('real CLI token exchange omitted Set-Cookie')
       expect(setCookie).toContain('HttpOnly')
@@ -253,7 +253,7 @@ export function apply(ctx) {
 
       const authenticated = await describeSettings(port, firstUrl.host, cookie)
       expect(authenticated.status).toBe(200)
-      const authenticatedBody = JSON.parse(authenticated.body) as unknown
+      const authenticatedBody: unknown = JSON.parse(authenticated.body)
       expect(authenticatedBody).toMatchObject({
         type: 'server-response',
         rpcId: 'web-auth-real-cli',

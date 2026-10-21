@@ -39,7 +39,7 @@ function busyReason(ctx: Context, requestingAgent: Agent, includeRequestingAgent
     agent.status === 'running' && (includeRequestingAgent || agent !== requestingAgent))
   if (runningAgent !== undefined) return `agent ${JSON.stringify(runningAgent.id)} is still running`
 
-  for (const caller of [undefined, ...ctx.agents.list()] as const) {
+  for (const caller of [undefined, ...ctx.agents.list().map(agent => agent.id)]) {
     for (const job of ctx.jobs.list(caller)) {
       if (job.status === 'running' || job.status === 'stopping') {
         return `background job ${JSON.stringify(job.id)} is still ${job.status}`

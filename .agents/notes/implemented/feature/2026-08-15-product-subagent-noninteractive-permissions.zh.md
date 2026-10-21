@@ -6,9 +6,9 @@ Status: implemented
 
 ## Problem
 
-[Claude Code 与 Codex 产品提供方](2026-08-04-claude-code-and-codex-subagent-backends.zh.md)都在没有人工界面的情况下运行。因此，原生权限提示、用户对话或 MCP elicitation 不能等待人员响应，但依赖任一产品环境中的默认值仍可能选择交互模式。部署也需要选择更宽松的原生模式，同时不能让父模型或单次工具调用提升自身权限。
+[Claude Code 与 Codex 产品提供方](../../../../packages/subagent/subagent-codex/README.zh.md)都在没有人工界面的情况下运行。因此，原生权限提示、用户对话或 MCP elicitation 不能等待人员响应，但依赖任一产品环境中的默认值仍可能选择交互模式。部署也需要选择更宽松的原生模式，同时不能让父模型或单次工具调用提升自身权限。
 
-失败的产品运行此前只能把终止原因送入 [subagent seam](2026-06-21-subagent-capability-seam.zh.md)。日志可以保留产品错误，但前台父 agent 与[一次性后台 Job](../../archived/feature/2026-08-12-product-subagent-one-shot-background-tasks.md)无法区分权限拒绝和其他失败。若复用 assistant 输出承载该事实，则会把基础设施说明错误归因给子模型。
+失败的产品运行此前只能把终止原因送入 [subagent seam](../../../../packages/subagent/subagent/README.zh.md)。日志可以保留产品错误，但前台父 agent 与[一次性后台 Job](../../archived/feature/2026-08-12-product-subagent-one-shot-background-tasks.md)无法区分权限拒绝和其他失败。若复用 assistant 输出承载该事实，则会把基础设施说明错误归因给子模型。
 
 ## Decision
 
@@ -32,7 +32,7 @@ Claude Code 默认使用 `dontAsk`，而且只接受锁定版本 Agent SDK 支�
 
 ### Codex
 
-Codex 默认使用 `never`，并接受 Codex 0.149.1 公开的三种原生非交互模式。提供方启动固定的 app-server 命令，再把所选模式映射为官方 `thread/start` 字段，因为 CLI 全局权限 flag 不会配置之后由 app-server 客户端创建的线程：
+Codex 默认使用 `never`，并接受 Codex 0.153.4 公开的三种原生非交互模式。提供方启动固定的 app-server 命令，再把所选模式映射为官方 `thread/start` 字段，因为 CLI 全局权限 flag 不会配置之后由 app-server 客户端创建的线程：
 
 | 值 | `thread/start` 字段 | 原生行为 |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Codex 默认使用 `never`，并接受 Codex 0.149.1 公开的三种原生非交
 
 ## Verification
 
-包测试固定所有允许与拒绝的 Config 值、准确的 SDK 与 app-server 字段映射、危险确认、无人值守终态、诊断脱敏与 UTF-8 上限、成功结果不携带诊断、并发运行隔离、前台顺序、Job detail、stderr observer 释放和进程清理。真实 Claude Agent SDK 0.3.241 与 Claude Code 2.1.241 fixture 证明其安全默认、受限拒绝、显式 bypass 与整棵进程树完全停稳。真实 Codex 0.149.1 app-server fixture 证明线程级 `never` 覆盖环境中的 `on-request`、自动评审可以启动、危险绕过只在测试拥有的临时存储中写入、被拒绝的提权不会留下副作用且诊断不含原始命令或路径、stderr 只供 Host 观测，而且 wrapper／native 进程树会退出。Loader 组装证明非默认模式可以在不启动任一产品的情况下发布；无密钥 ACP snapshot 则记录每个产品的失败诊断如何经过前台与 Job 呈现，同时面向模型的产品工具 schema 不包含权限参数。
+包测试固定所有允许与拒绝的 Config 值、准确的 SDK 与 app-server 字段映射、危险确认、无人值守终态、诊断脱敏与 UTF-8 上限、成功结果不携带诊断、并发运行隔离、前台顺序、Job detail、stderr observer 释放和进程清理。真实 Claude Agent SDK 0.3.263 与 Claude Code 2.1.263 fixture 证明其安全默认、受限拒绝、显式 bypass 与整棵进程树完全停稳。真实 Codex 0.153.4 app-server fixture 证明线程级 `never` 覆盖环境中的 `on-request`、自动评审可以启动、危险绕过只在测试拥有的临时存储中写入、被拒绝的提权不会留下副作用且诊断不含原始命令或路径、stderr 只供 Host 观测，而且 wrapper／native 进程树会退出。Loader 组装证明非默认模式可以在不启动任一产品的情况下发布；无密钥 ACP snapshot 则记录每个产品的失败诊断如何经过前台与 Job 呈现，同时面向模型的产品工具 schema 不包含权限参数。
 
 ## Alternatives considered
 

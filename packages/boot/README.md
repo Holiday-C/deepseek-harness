@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The boot group provides what a dsh app needs to start and replace itself: `app-boot` turns a `cordis.yml` plus environment and patch layers into a running app, `cmdline` hands launcher-owned arguments and lifecycle values to that app, and `app-restart` exposes a supervised restart to root Web agents. With these packages you can run `dsh` or write an application that boots the same way. This page maps the group; each package README owns its per-package contract.
+The boot group launches profile applications and manages their installed composition. `app-boot` resolves configuration and starts the Loader, `cmdline` supplies application arguments, and `plugin-manager` exposes current-profile operations shared with the CLI. Each package README owns its details.
 
 ## Table of Contents
 
@@ -24,7 +24,11 @@ The boot group provides what a dsh app needs to start and replace itself: `app-b
 |---|---|---|
 | [`app-boot`](app-boot/README.md) | Boots a dsh app from a `cordis.yml`: loads `.env`, applies profile and patch layers, and reports startup failures clearly | (library for the bins) |
 | [`app-restart`](app-restart/README.md) | Gives root Web agents an approved, quiescence-checked restart handoff after updates or rebuilds | (model-facing Consumer of `appRestart`) |
-| [`cmdline`](cmdline/README.md) | Lets the app own its flags and lifecycle requests; passes everything after the launcher's flags through verbatim | `cmdlineArgs`, `appExit`, `appReady`, `appRestart?` |
+| [`cmdline`](cmdline/README.md) | Lets the app own its flags, `--help`, and exit code; passes everything after the launcher's flags through verbatim | `cmdlineArgs`, `appExit` |
+| [`hmr`](hmr/README.md) | Coordinates module and configuration reloads with package mutations | `hmr` |
+| [`config-editor`](config-editor/README.md) | Persists active profile configuration through Loader reconciliation | `configEditor` |
+| [`plugin-manager`](plugin-manager/README.md) | Manages current-profile plugins and bundle packages through shared CLI operations | `pluginManager` |
+| [`plugin-market`](plugin-market/README.md) | Reads the plugin market indexes the user configures for Discover and the `plugin_market` tool | `pluginMarket` |
 
 <a id="related-documentation"></a>
 ## Related documentation
@@ -33,6 +37,8 @@ The boot group provides what a dsh app needs to start and replace itself: `app-b
 - [Profile bundles](../bundle/README.md) — installable patch layers that `dsh --profile` compositions mount.
 - [dsh-home-paths](../util/home-paths/README.md) — the harness-home resolver both packages build on.
 - [dsh-cmdline](cmdline/README.md) — how an app owns its flag family instead of the launcher.
+
+- [Profile management](../../docs/subsystems/boot.md) — service methods and result records.
 
 <a id="dev-note"></a>
 ## Dev Note

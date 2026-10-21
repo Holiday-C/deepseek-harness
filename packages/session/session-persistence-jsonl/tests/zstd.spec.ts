@@ -8,7 +8,7 @@ import { performance } from 'node:perf_hooks'
 import { SessionSeq, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
+import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import {
   generationLogPath, logPath, scanLog, sessionDir, toHeaderLine, type JsonlCompression,
 } from '../src/format.ts'
@@ -417,16 +417,36 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
     const header = meta('zstd-v0-read', '/work')
     const sourcePath = generationLogPath(root, header.cwd, header.id, 0, 'zstd')
     const currentPath = logPath(root, header.cwd, header.id, 'zstd')
+    const [turn, user, step, ...tail] = releasedV1OneTurnLog()
+    // Synthetic historical input opens its step before any surface so V3 can reserve the system head.
+    const historical = [turn!, step!, user!, ...tail].map((event, seq) => ({
+      ...event, seq: SessionSeq(seq), time: seq < 3 ? seq + 1 : event.time,
+    }))
     const source = Buffer.concat([
       await compressZstdFrame(`${JSON.stringify(releasedV0Header(header))}\n`),
-      await compressZstdFrame(`${releasedV1OneTurnLog().map(event => JSON.stringify(event)).join('\n')}\n`),
+      await compressZstdFrame(`${historical.map(event => JSON.stringify(event)).join('\n')}\n`),
     ])
     await mkdir(sessionDir(root, header.cwd, header.id), { recursive: true })
     await writeFile(sourcePath, source)
 
     await expect(readAll(ctx.sessionPersistence, header.id)).resolves.toEqual({
       meta: { ...header, delegationDepth: 0 },
-      events: oneTurnLog(),
+      events: [
+        historical[0],
+        historical[1],
+        {
+          type: 'system/message', seq: 2, time: 2, surfaceOp: 'append',
+          data: {
+            turn: 1, step: 1,
+            message: {
+              id: 'v2-to-v3-system-fc06c3f7720f3bc94ea7a2b7fadde6a5b100c6ab6ca342d2222bd017184a0b67',
+              role: 'system', source: { kind: 'system-prompt' }, content: [],
+            },
+          },
+        },
+        { ...historical[2], seq: 3 },
+        ...oneTurnLog().slice(3).map(event => ({ ...event, seq: event.seq + 1 })),
+      ],
     })
     expect(await readFile(sourcePath)).toEqual(source)
     await expect(readFile(currentPath)).rejects.toMatchObject({ code: 'ENOENT' })
@@ -447,10 +467,8 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
     const root = await freshRoot()
     const ctx = new Context()
     contexts.push(ctx)
-    let backend!: JsonlSessionPersistence
-    await ctx.plugin((inner: Context) => {
-      backend = new JsonlSessionPersistence(inner, { root })
-    })
+    await ctx.plugin((inner: Context) => JsonlSessionPersistence.apply(inner, { root }))
+    const backend = ctx.sessionPersistence
     const header = meta('direct-default')
     const path = logPath(root, header.cwd, header.id, 'zstd')
 
@@ -500,7 +518,10 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
     buffer[eventFrame.end - 1] = buffer[eventFrame.end - 1]! ^ 0xFF
     await writeFile(path, buffer)
 
-    expect((await ctx.sessionPersistence.list()).map(item => item.header.id)).toEqual([header.id])
+    const listed = await ctx.sessionPersistence.list()
+    expect(listed.map(item => item.header.id)).toEqual([header.id])
+    expect(listed[0]?.formatStatus).toBe('current')
+    expect((await ctx.sessionPersistence.stat(header.id))?.formatStatus).toBe('current')
     await expect(readAll(ctx.sessionPersistence, header.id)).rejects.toThrow(/frame at byte .* failed validation/)
   })
 
@@ -762,7 +783,7 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
     expect((await readAll(ctx.sessionPersistence, header.id)).events).toEqual([...oneTurnLog(), ...secondTurn])
   })
 
-  it('skips empty, incomplete, and non-header compressed artifacts while rejecting malformed header frames', async () => {
+  it('skips unreadable compressed headers during discovery while rejecting targeted reads', async () => {
     const root = await freshRoot()
     for (const [id, content] of [
       ['empty', Buffer.alloc(0)],
@@ -783,7 +804,7 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
       JSON.stringify({ type: 'turn/start' }),
       '',
     ].join('\n')))
-    await expect(ctx.sessionPersistence.list()).rejects.toThrow(/first frame is not exactly one header line/)
+    expect(await ctx.sessionPersistence.list()).toEqual([])
     await expect(ctx.sessionPersistence.open(twoLinesId, 'read'))
       .rejects.toThrow(/first frame is not exactly one header line/)
   })
@@ -804,7 +825,11 @@ describe('JsonlSessionPersistence: default Zstandard encoding', () => {
       .rejects.toThrow(/empty or header-less Zstandard session log/)
     await expect(ctx.sessionPersistence.open(SessionId('empty-header'), 'read'))
       .rejects.toThrow(/first frame is not exactly one header line/)
-    await expect(ctx.sessionPersistence.list()).rejects.toThrow(/header frame failed validation/)
+    expect(await ctx.sessionPersistence.list()).toEqual([])
+    await expect(ctx.sessionPersistence.stat(SessionId('bad-checksum')))
+      .rejects.toThrow(/header frame failed validation/)
+    await expect(ctx.sessionPersistence.open(SessionId('bad-checksum'), 'read'))
+      .rejects.toThrow(/frame at byte 0 failed validation/)
   })
 })
 

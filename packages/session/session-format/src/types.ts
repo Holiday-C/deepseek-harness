@@ -60,8 +60,8 @@ export interface SessionFormatMigrationStageInput {
   readonly sourceHeader: SessionFormatHeader
   /** Validated target metadata produced by this edge's header migration. */
   readonly targetHeader: SessionFormatHeader
-  /** Exact inherited prefix length in source coordinates. */
-  readonly sourceInheritedEventCount: number
+  /** Inherited prefix length in source coordinates, or undefined until body decoding completes. */
+  readonly sourceInheritedEventCount: number | undefined
   /** Whether this edge consumes physical decode output or a prior migration's validated output. */
   readonly sourceKind: 'decoded' | 'transformed'
 }
@@ -80,7 +80,7 @@ export interface SessionFormatChain {
   /** Compile the complete migration stage chain for one decoded source artifact. */
   createStream(
     header: SessionFormatHeader,
-    inheritedEventCount: number,
+    inheritedEventCount: number | undefined,
     context: SessionFormatMigrationContext,
   ): SessionFormatMigrationStream
   /** Convert only a supported header to the current logical representation. */
@@ -90,7 +90,7 @@ export interface SessionFormatChain {
 /** Physical-row failure policy selected once for one restore. */
 export type SessionFormatRecovery = 'strict' | 'recoverable'
 
-/** Pure physical JSON codec frozen with one released Session format. */
+/** Pure physical JSON codec for one Session version's supported representations; established meanings remain stable. */
 export interface SessionFormatCodec {
   readonly version: number
   /** Decode one physical header into body-independent logical metadata. */

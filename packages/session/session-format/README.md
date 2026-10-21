@@ -27,7 +27,7 @@ English | [中文](README.zh.md)
 
 ### When to use it
 
-Use this library from persistence or format-catalog code that must classify a physical Session header, restore current logical values, or compose released adjacent migrations. It is not a Cordis plugin and has no profile mount row. No runtime invariant companion is published because each completed operation validates its result; decoder and transformer state belongs to one unfinished streaming restore and is never shared across restores.
+Use this library from persistence or format-catalog code that must classify a physical Session header, restore current logical values, or compose released adjacent migrations. It is not a Cordis plugin and has no profile mount row.
 
 ### Entry point
 
@@ -41,7 +41,7 @@ const headerRecord = catalog.encodeCurrentHeader(current.header, current.inherit
 const eventRecords = current.events.map(catalog.encodeCurrentEvent)
 ```
 
-`createSessionFormatCatalog()` accepts one frozen codec per supported version, the current record encoder, one migration per adjacent version pair, and current artifact and header restorers. `readHeader()` returns a `current`, `migration-required`, `unsupported`, or `malformed` descriptor without reading events. Body readers create one restore, push each parsed physical row through `decodeRow()`, and call `finish()` once for a current artifact. Writers encode its header and events record by record.
+`createSessionFormatCatalog()` accepts one codec for each version's supported representations, the current record encoder, one migration per adjacent version pair, and current artifact and header restorers. `readHeader()` returns a `current`, `migration-required`, `unsupported`, or `malformed` descriptor without reading events. Body readers create one restore, push each parsed physical row through `decodeRow()`, and call `finish()` once for a current artifact. Writers encode its header and events record by record. Established record meanings remain stable; [compatibility review](../../../.agents/notes/implemented/process/2026-10-08-session-reader-compatibility-review.md) governs same-version additions.
 
 The `recovery` option selects strict row failure or recoverable suffix handling. `validation: 'current'` applies all installed current-format validation. `validation: 'transformed'` applies released current-format validation after historical migration, while already-current input receives only its codec's physical validation.
 
@@ -55,7 +55,7 @@ The recoverable decoder returns the accepted logical prefix. A codec may drop on
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The chain validates unique gap-free ordering at construction. The catalog composes one row decoder with stateful adjacent event transformers, retains only their bounded state and the final current events, and performs target validation at `finish()`; only the caller decides whether and how to publish that result.
+The chain validates unique gap-free ordering at construction. A source cut may be unknown until EOF; stages that require a header cut reject its absence, while marker-based stages derive it from emitted events. Each stage returns its exact target cut at finish, and any predeclared cut must agree. The catalog composes one row decoder with stateful adjacent event transformers, retains only their bounded state and the final current events, and performs target validation at `finish()`; only the caller decides whether and how to publish that result.
 
 | File | Role |
 |---|---|

@@ -36,7 +36,7 @@ function stubAgent(scopeOwner: Context, rawId: string): StubAgent {
     session,
     inbox: unsupportedInbox(),
     get status() { return status },
-    ctx: undefined as unknown as Context,
+    ctx: scopeOwner,
     send(_message: UserMessage, _target: InboxTarget, _wakeup: boolean) {},
     followup(_message: UserMessage) {},
     steer(_message: UserMessage) {},
@@ -81,7 +81,7 @@ async function harness(config: AppRestart.Config = { requireApproval: false }) {
   const restart = vi.fn()
   provideCmdline(ctx, { args: [], exit: () => {}, restart })
   const root = stubAgent(scopeOwner, `restart-root-${Math.random()}`)
-  ctx.agents.register(root.agent)
+  await ctx.agents.register(root.agent)
   const fiber = await ctx.plugin(AppRestart, config)
   return { ctx, root, restart, fiber }
 }
@@ -103,7 +103,7 @@ afterEach(async () => {
 describe('restart_dsh', () => {
   it('commits only after the successful result concludes its agent turn', async () => {
     const test = await harness()
-    test.ctx.emit('agent/created', { agent: test.root.agent })
+    await test.ctx.serial('agent/created', { agent: test.root.agent, source: 'startup' })
     expect(test.ctx.tools.get('restart_dsh', test.root.agent)?.presentCall?.({}))
       .toEqual({ card: 'generic', title: 'Restart DSH', kind: 'other' })
     const result = await execute(test.ctx, test.root.agent)
@@ -139,12 +139,12 @@ describe('restart_dsh', () => {
     const test = await harness()
     const child = stubAgent(test.root.agent.ctx, 'restart-child')
     const detachChild = test.ctx.agents.enter(child.agent, test.root.agent)
-    test.ctx.agents.announce(child.agent)
+    await test.ctx.agents.announce(child.agent, 'startup')
     expect(test.ctx.tools.get('restart_dsh', child.agent)).toBeUndefined()
     detachChild()
 
     const other = stubAgent(test.root.agent.ctx, 'restart-other')
-    test.ctx.agents.register(other.agent)
+    await test.ctx.agents.register(other.agent)
     expect(test.ctx.tools.get('restart_dsh', other.agent)).toBeDefined()
     const result = await execute(test.ctx, test.root.agent)
     expect(result.error?.info?.code).toBe('APP_RESTART_BUSY')
@@ -161,7 +161,7 @@ describe('restart_dsh', () => {
     test.ctx.jobs.start({
       kind: 'bash',
       label: 'build',
-      owner: test.root.agent,
+      owner: test.root.agent.id,
       run: () => ({ cancel: () => { done.resolve({ status: 'killed' }) }, done: done.promise }),
     })
 
@@ -182,10 +182,10 @@ describe('restart_dsh', () => {
     const id = test.ctx.jobs.start({
       kind: 'bash',
       label: 'build',
-      owner: test.root.agent,
+      owner: test.root.agent.id,
       run: () => ({ cancel: () => {}, done: done.promise }),
     })
-    expect(test.ctx.jobs.kill(id, test.root.agent)).toBe('requested')
+    expect(test.ctx.jobs.kill(id, test.root.agent.id)).toBe('requested')
 
     const result = await execute(test.ctx, test.root.agent)
     expect(result.error?.info?.code).toBe('APP_RESTART_BUSY')
@@ -198,7 +198,7 @@ describe('restart_dsh', () => {
     const test = await harness()
     const other = stubAgent(test.root.agent.ctx, 'restart-race')
     other.settleIdle()
-    test.ctx.agents.register(other.agent)
+    await test.ctx.agents.register(other.agent)
 
     expect((await execute(test.ctx, test.root.agent)).isError).toBe(false)
     other.setStatus('running')
@@ -294,7 +294,7 @@ describe('restart_dsh', () => {
     if (scopeOwner === undefined) throw new Error('test scope owner did not mount')
     provideCmdline(ctx, { args: [], exit: () => {}, restart: () => {} })
     const root = stubAgent(scopeOwner, 'restart-direct-default')
-    ctx.agents.register(root.agent)
+    await ctx.agents.register(root.agent)
     AppRestart.apply(ctx, {})
 
     expect((await execute(ctx, root.agent)).isError).toBe(true)

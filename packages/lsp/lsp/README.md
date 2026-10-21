@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-lsp` provides the harness's language-server code navigation: an agent can go to a symbol's definition, find its references, jump to its implementations, or read hover documentation, and the code-navigation service (`ctx.lsp`) routes each query to the language-server provider that owns the file's extension. Providers register by branded id and file extension, so a provider swap never changes how navigation is requested or what the model sees. The service exposes exactly four read-only operations and no generic JSON-RPC escape hatch, and it contributes no prompt or tool schema itself — the model-facing `lsp` tool lives in `dsh-tool-lsp`. Compose it with a provider such as `dsh-lsp-stdio` and the tool to give agents precise navigation; this package does nothing on its own.
+Use `dsh-lsp` to give agents language-server navigation for definitions, references, implementations, and hover documentation. Queries select the configured provider by file extension and return normalized results with structured failures, so backend changes do not alter the navigation request or model-visible response. Navigation is read-only and deliberately excludes generic JSON-RPC access, rename, formatting, diagnostics, and symbol lists. This package must be combined with a provider such as `dsh-lsp-stdio` and the model-facing `dsh-tool-lsp`; alone it provides no navigation.
 
 ## Table of Contents
 
@@ -87,7 +87,6 @@ This section explains the design decisions behind the seam and where the code re
 | [`src/index.ts`](src/index.ts) | Plugin entry: `Lsp` service, `registerProvider`/`query`, `finalExtension`, `LspError` codes |
 | [`src/types.ts`](src/types.ts) | Seam vocabulary: request, result, provider, and service contracts |
 | [`src/brand.ts`](src/brand.ts) | `LspProviderId` branded-id type and factory |
-| — | No runtime invariant companion is published; provider ids and extension routes are private, atomically updated state; the seam exposes neither an enumerable snapshot nor lifecycle events to compare independently. |
 
 ### Registration and selection lifecycle
 

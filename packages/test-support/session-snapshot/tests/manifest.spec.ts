@@ -9,6 +9,13 @@ describe('snapshot manifest', () => {
     })
   })
 
+  it('accepts the standalone SDK-minimal profile', () => {
+    expect(parseSnapshotManifest('version: 1\nprofile: sdk-minimal\n')).toEqual({
+      version: 1,
+      profile: 'sdk-minimal',
+    })
+  })
+
   it('parses an explicitly retained Session generation and its migration coverage', () => {
     expect(parseSnapshotManifest([
       'version: 1',
@@ -80,6 +87,7 @@ describe('snapshot manifest', () => {
       '  childSystemPrompts: [1]',
       '  childToolSchemas: [1, 2]',
       '  changes: 1',
+      '  promptChanges: 2',
       'replay:',
       '  override: true',
       'platform: posix',
@@ -89,7 +97,7 @@ describe('snapshot manifest', () => {
       'workspace:',
       '  setup: fixed-mtimes',
       '  final: true',
-      '  parent: home',
+      '  parent: outside-temp',
       'input:',
       '  task: Rejected before persistence.',
       '  attachments:',
@@ -111,12 +119,13 @@ describe('snapshot manifest', () => {
         childSystemPrompts: [1],
         childToolSchemas: [1, 2],
         changes: 1,
+        promptChanges: 2,
       },
       replay: { override: true },
       platform: 'posix',
       permission: 'workspace-write',
       environment: { DSH_SNAPSHOT_FAILURE: 'enabled' },
-      workspace: { setup: 'fixed-mtimes', final: true, parent: 'home' },
+      workspace: { setup: 'fixed-mtimes', final: true, parent: 'outside-temp' },
       input: {
         task: 'Rejected before persistence.',
         attachments: [{ id: 'sha256:abc', mediaType: 'image/png', data: 'aGVsbG8=' }],
@@ -159,7 +168,7 @@ describe('snapshot manifest', () => {
   it.each([
     ['', 'manifest must be a mapping'],
     ['version: 2\nprofile: acp\n', 'manifest.version must equal 1'],
-    ['version: 1\nprofile: private\n', 'manifest.profile must be headless, sdk, acp, or web'],
+    ['version: 1\nprofile: private\n', 'manifest.profile must be headless, sdk, sdk-minimal, acp, or web'],
     ['version: 1\nprofile: acp\nextra: true\n', 'manifest has unknown field(s): extra'],
     ['version: 1\nprofile: acp\ncomposition: Not_Safe\n', 'manifest.composition must be a lower-kebab-case name'],
     ['version: 1\nprofile: acp\nrecording: maybe\n', 'manifest.recording must be live or authored'],
@@ -167,6 +176,7 @@ describe('snapshot manifest', () => {
     ['version: 1\nprofile: acp\nheader:\n  class: base\n  pin: false\n', 'manifest.header.pin must equal true when present'],
     ['version: 1\nprofile: acp\nheader:\n  class: base\n  childToolSchemas: [1, 1]\n', 'manifest.header.childToolSchemas must be an array of unique positive integers'],
     ['version: 1\nprofile: acp\nheader:\n  class: base\n  changes: -1\n', 'manifest.header.changes must be a non-negative integer'],
+    ['version: 1\nprofile: acp\nheader:\n  class: base\n  promptChanges: 1.5\n', 'manifest.header.promptChanges must be a non-negative integer'],
     ['version: 1\nprofile: acp\nheader:\n  class: base\n  systemPromptSource: ../bad\n', 'manifest.header.systemPromptSource must be a lower-kebab-case name or corpus-relative path'],
     ['version: 1\nprofile: acp\nreplay:\n  override: false\n', 'manifest.replay.override must equal true'],
     ['version: 1\nprofile: acp\nplatform: windows\n', 'manifest.platform must be posix or pwsh'],
@@ -174,7 +184,7 @@ describe('snapshot manifest', () => {
     ['version: 1\nprofile: acp\nenvironment:\n  lower: value\n', 'manifest.environment must map uppercase environment names to strings'],
     ['version: 1\nprofile: acp\nworkspace: {}\n', 'manifest.workspace must not be empty'],
     ['version: 1\nprofile: acp\nworkspace:\n  final: false\n', 'manifest.workspace.final must equal true when present'],
-    ['version: 1\nprofile: acp\nworkspace:\n  parent: temp\n', 'manifest.workspace.parent must equal home'],
+    ['version: 1\nprofile: acp\nworkspace:\n  parent: temp\n', 'manifest.workspace.parent must equal outside-temp'],
     ['version: 1\nprofile: acp\ninput:\n  task: ""\n', 'manifest.input.task must be a non-empty string when present'],
     ['version: 1\nprofile: acp\ninput: {}\n', 'manifest.input must declare task or attachments'],
     ['version: 1\nprofile: acp\ninput:\n  attachments: []\n', 'manifest.input.attachments must be a non-empty array'],

@@ -1,6 +1,37 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-supervised-web-self-update-restart.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-05-supervised-web-self-update-restart.md
-2026-09-05-supervised-web-self-update-restart.md: 2b1a64ca982e533f998a36b427df14e1cf20617c
-2026-09-05-supervised-web-self-update-restart.zh.md: 81b863aa3c345aa9b168ddbcd08116c5be52ef08
+/agent-note-supervised-web-restart-after-self-update:
+  en: 2d00a4f389519a00
+  zh: 53ffd6b4a84d1e0e
+/agent-note-supervised-web-restart-after-self-update/problem:
+  en: b3f0ef5a48aedce4
+  zh: d57b3559921dbcc3
+/agent-note-supervised-web-restart-after-self-update/decision:
+  en: a15c7c13f167e5ac
+  zh: 63bcc2ef60c2f344
+/agent-note-supervised-web-restart-after-self-update/decision/supervised-web-process:
+  en: a80a2db1255047b6
+  zh: 9c62dccb939b595e
+/agent-note-supervised-web-restart-after-self-update/decision/launcher-provided-restart-capability:
+  en: 9e0b910d1a2a9846
+  zh: f85da74c1b014e84
+/agent-note-supervised-web-restart-after-self-update/decision/model-facing-restart-consumer:
+  en: ea08a274b66200ac
+  zh: a9db01762a07095c
+/agent-note-supervised-web-restart-after-self-update/decision/documentation-and-composition:
+  en: 49afed672694275c
+  zh: 7b66ea3e2b5bba90
+/agent-note-supervised-web-restart-after-self-update/existing-decisions-and-supersession:
+  en: 437bede7f98cda2b
+  zh: ff9881df578246ed
+/agent-note-supervised-web-restart-after-self-update/alternatives-considered:
+  en: bf5d985766973034
+  zh: e81b1819837d14d0
+/agent-note-supervised-web-restart-after-self-update/verification:
+  en: c583dd1bd85faf8b
+  zh: ec5dbc348ea5145e
+/agent-note-supervised-web-restart-after-self-update/consequences:
+  en: 9f19b0825d1fe744
+  zh: 43175759fc3c951b

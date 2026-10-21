@@ -4,7 +4,7 @@ import { isAbsolute } from 'node:path'
 import * as yaml from 'js-yaml'
 
 /** Public `dsh` profile used to control a recorded-session scenario. */
-export type SnapshotProfile = 'headless' | 'sdk' | 'acp' | 'web'
+export type SnapshotProfile = 'headless' | 'sdk' | 'sdk-minimal' | 'acp' | 'web'
 
 /** How a canonical session may be regenerated. */
 export type SnapshotRecording = 'live' | 'authored'
@@ -25,6 +25,8 @@ export interface SnapshotHeaderManifest {
   childToolSchemas?: number[]
   /** Legitimate changed-header count after the initial request header. */
   changes?: number
+  /** Legitimate later `system/message` count (replacements or in-history appends) after the initial system prompt. */
+  promptChanges?: number
 }
 
 /** Replay facts that cannot be reconstructed from successful model chunks. */
@@ -45,8 +47,8 @@ export interface SnapshotWorkspaceManifest {
   setup?: string
   /** Whether `workspace.expected/` owns the complete final world state. */
   final?: true
-  /** Place the generated cwd under the user's home instead of a temporary root. */
-  parent?: 'home'
+  /** Place the generated cwd outside automatically writable temporary roots. */
+  parent?: 'outside-temp'
 }
 
 /** Controller input that cannot enter a session because admission rejects it. */
@@ -73,19 +75,20 @@ export interface SnapshotSessionReference {
   source: string
 }
 
-/** Historical-format behavior one retained scenario permanently exercises. */
+/** Historical format or retired capability one retained scenario permanently exercises. */
 export type SnapshotSessionFormatCoverage =
   | 'multi-hop'
   | 'packed-row'
   | 'retry-failure'
   | 'shipped-profile'
   | 'adjacent-migration'
+  | 'retired-tools'
 
 /** Explicit historical generation retained by an owning scenario. */
 export interface SnapshotSessionFormatManifest {
   /** Selected fixture generation; absent manifest metadata tracks the current writer. */
   readonly version: number
-  /** Migration behaviors that require this historical fixture. */
+  /** Migration or retired-tool behavior that requires this immutable fixture. */
   readonly coverage: readonly SnapshotSessionFormatCoverage[]
 }
 
@@ -140,7 +143,7 @@ export function writesCurrentSessionFixtures(
   return mode !== 'replay' && manifest.session === undefined && manifest.sessionFormat === undefined
 }
 
-const PROFILES = new Set<SnapshotProfile>(['headless', 'sdk', 'acp', 'web'])
+const PROFILES = new Set<SnapshotProfile>(['headless', 'sdk', 'sdk-minimal', 'acp', 'web'])
 const RECORDINGS = new Set<SnapshotRecording>(['live', 'authored'])
 const PLATFORMS = new Set<SnapshotPlatform>(['posix', 'pwsh'])
 const PERMISSIONS = new Set<SnapshotPermission>(['read-only', 'workspace-write', 'danger-full-access'])
@@ -150,6 +153,7 @@ const SESSION_FORMAT_COVERAGE = new Set<SnapshotSessionFormatCoverage>([
   'retry-failure',
   'shipped-profile',
   'adjacent-migration',
+  'retired-tools',
 ])
 const NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -223,7 +227,7 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
     if (root.version !== 1) throw new Error('manifest.version must equal 1')
     const scenario = root.scenario === undefined ? undefined : name(root.scenario, 'manifest.scenario')
     if (typeof root.profile !== 'string' || !PROFILES.has(root.profile as SnapshotProfile)) {
-      throw new Error('manifest.profile must be headless, sdk, acp, or web')
+      throw new Error('manifest.profile must be headless, sdk, sdk-minimal, acp, or web')
     }
 
     const composition = root.composition === undefined
@@ -248,12 +252,15 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
         'childSystemPrompts',
         'childToolSchemas',
         'changes',
+        'promptChanges',
       ], 'manifest.header')
       if (value.pin !== undefined && value.pin !== true) {
         throw new Error('manifest.header.pin must equal true when present')
       }
-      if (value.changes !== undefined && (!Number.isInteger(value.changes) || Number(value.changes) < 0)) {
-        throw new Error('manifest.header.changes must be a non-negative integer')
+      for (const field of ['changes', 'promptChanges'] as const) {
+        if (value[field] !== undefined && (!Number.isInteger(value[field]) || Number(value[field]) < 0)) {
+          throw new Error(`manifest.header.${field} must be a non-negative integer`)
+        }
       }
       header = {
         class: name(value.class, 'manifest.header.class'),
@@ -271,6 +278,7 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
           ? {}
           : { childToolSchemas: positiveIndexes(value.childToolSchemas, 'manifest.header.childToolSchemas') }),
         ...(value.changes === undefined ? {} : { changes: Number(value.changes) }),
+        ...(value.promptChanges === undefined ? {} : { promptChanges: Number(value.promptChanges) }),
       }
     }
 
@@ -314,13 +322,13 @@ export function parseSnapshotManifest(source: string, path = 'snapshot.yml'): Sn
       if (value.final !== undefined && value.final !== true) {
         throw new Error('manifest.workspace.final must equal true when present')
       }
-      if (value.parent !== undefined && value.parent !== 'home') {
-        throw new Error('manifest.workspace.parent must equal home')
+      if (value.parent !== undefined && value.parent !== 'outside-temp') {
+        throw new Error('manifest.workspace.parent must equal outside-temp')
       }
       workspace = {
         ...(value.setup === undefined ? {} : { setup: name(value.setup, 'manifest.workspace.setup') }),
         ...(value.final === true ? { final: true as const } : {}),
-        ...(value.parent === 'home' ? { parent: 'home' as const } : {}),
+        ...(value.parent === 'outside-temp' ? { parent: 'outside-temp' as const } : {}),
       }
       if (Object.keys(workspace).length === 0) throw new Error('manifest.workspace must not be empty')
     }

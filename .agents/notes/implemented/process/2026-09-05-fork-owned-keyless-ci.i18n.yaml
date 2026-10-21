@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-05-fork-owned-keyless-ci.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-05-fork-owned-keyless-ci.md
-2026-09-05-fork-owned-keyless-ci.md: d4740240c049c70496b57a3574421a5d2010c964
-2026-09-05-fork-owned-keyless-ci.zh.md: c4217da9a767af7e0fd65ddee3ac4d4ee9975f6b
+/agent-note-fork-owned-keyless-ci:
+  en: c4b1b1f86e872f94
+  zh: 64bfac377558e49e
+/agent-note-fork-owned-keyless-ci/problem:
+  en: 362a5f4dbcb1338a
+  zh: ff470d4da1e5352e
+/agent-note-fork-owned-keyless-ci/decision:
+  en: 943c05c0c90bdb3f
+  zh: ba608b1057c4865a
+/agent-note-fork-owned-keyless-ci/alternatives-considered:
+  en: a9d47e3fcc21ecb9
+  zh: 490b36821a801aac
+/agent-note-fork-owned-keyless-ci/consequences:
+  en: 0cd1e212811fec50
+  zh: 1b071c94eaaa28a7

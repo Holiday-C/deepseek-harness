@@ -1,5 +1,4 @@
-import { EventEmitter } from 'node:events'
-import type { ChildProcess } from 'node:child_process'
+import { ChildProcess } from 'node:child_process'
 import { describe, expect, it, vi } from 'vitest'
 import {
   APP_RESTART_EXIT_CODE,
@@ -8,19 +7,19 @@ import {
   type SupervisorHost,
 } from '../src/supervisor.ts'
 
-interface FakeChild extends EventEmitter {
+interface FakeChild extends ChildProcess {
   pid: number
   exitCode: number | null
   signalCode: NodeJS.Signals | null
-  kill: ReturnType<typeof vi.fn>
+  kill: ReturnType<typeof vi.fn<ChildProcess['kill']>>
 }
 
 function fakeChild(pid: number): FakeChild {
-  return Object.assign(new EventEmitter(), {
+  return Object.assign(new ChildProcess(), {
     pid,
     exitCode: null,
     signalCode: null,
-    kill: vi.fn(),
+    kill: vi.fn(() => true),
   })
 }
 
@@ -44,7 +43,7 @@ function fixture(children: FakeChild[]): {
         spawned.push({ command, args, detached })
         const child = children.shift()
         if (child === undefined) throw new Error('unexpected spawn')
-        return child as unknown as ChildProcess
+        return child
       },
       on(signal, listener) {
         const current = listeners.get(signal) ?? new Set()
